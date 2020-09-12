@@ -1,6 +1,6 @@
 # FPGA Stepper motor control
 
-Build to control steeper motors, with smooth rotation and ability to count steps exactly.
+Build to control stepper motors, with smooth rotation and ability to count steps exactly.
 
 ## Verilog Code
 Code to control a stepper motor driven robot car using an FPGA. Built to use an Artix 7 based BASYS 3 or CMOD A7
