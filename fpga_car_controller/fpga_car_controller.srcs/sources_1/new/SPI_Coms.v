@@ -5,7 +5,7 @@
 // 
 // Create Date: 07/17/2020 10:31:08 PM
 // Design Name: 
-// Module Name: LED_SPI
+// Module Name: SPI_Coms
 // Project Name: 
 // Target Devices: 
 // Tool Versions: 

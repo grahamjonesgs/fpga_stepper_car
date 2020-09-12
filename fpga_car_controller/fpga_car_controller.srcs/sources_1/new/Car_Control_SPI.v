@@ -5,7 +5,7 @@
 // 
 // Create Date: 07/31/2020 10:33:34 PM
 // Design Name: 
-// Module Name: SM_Outout_top
+// Module Name: Car_Control_SPI
 // Project Name: 
 // Target Devices: 
 // Tool Versions: 
