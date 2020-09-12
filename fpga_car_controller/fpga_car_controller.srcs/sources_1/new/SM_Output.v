@@ -32,13 +32,13 @@ module SM_Output(
     output   reg        o_step_counter
     );
     
-    reg     [31:0]      timing_counter;
-    reg     [31:0]      max_counter;
+    reg     [31:0]      r_timing_counter;
+    reg     [31:0]      r_max_counter;
     reg                 r_step;
     
     
     
-   /*ila_0  myila(.clk(i_sysclk),.probe0(timing_counter),.probe1(max_counter),.probe2(i_speed),.probe3(8'h0),
+   /*ila_0  myila(.clk(i_sysclk),.probe0(r_timing_counter),.probe1(r_max_counter),.probe2(i_speed),.probe3(8'h0),
   .probe4(8'h0), .probe5(8'h0),.probe6(8'h0),.probe7(8'h0),
   .probe8(i_data_DV),.probe9(r_step),.probe10(i_reset),.probe11(1'b0),.probe12(1'b0),
   .probe13(1'b0),.probe14(1'b0),.probe15(1'b0),
@@ -48,18 +48,18 @@ module SM_Output(
     begin 
         if(i_reset==1)
             begin
-                timing_counter <= 0;
-                max_counter <=0;
+                r_timing_counter <= 0;
+                r_max_counter <=0;
                 o_step_counter<=1'b0;
                 r_step <= 1'b0;
                 o_dir_pin <=1'b0;
             end
             
         else
-            timing_counter <= timing_counter + 1;
-            if (timing_counter > max_counter)
+            r_timing_counter <= r_timing_counter + 1;
+            if (r_timing_counter > r_max_counter)
             begin
-                timing_counter<=0;
+                r_timing_counter<=0;
                 if (r_step)
                 begin
                     r_step<=1'b0;
@@ -70,21 +70,21 @@ module SM_Output(
                     r_step<=1'b1;
                     o_step_counter<=1'b1;
                 end // else if r_step
-            end // if (timing_counter > max_counter)
+            end // if (r_timing_counter > r_max_counter)
             else //    
             begin
                 o_step_counter<=1'b0;
-            end // else if timing_counter > max_counter)
+            end // else if r_timing_counter > r_max_counter)
             if(i_data_DV)
             begin
-                timing_counter <= 0;
+                r_timing_counter <= 0;
                 r_step <= 1;
-                max_counter <= set_max(i_speed);
+                r_max_counter <= set_max(i_speed);
                 o_dir_pin <= i_dir;
             end // if (i_data_DV)
     end 
     
-    assign o_step_pin = (max_counter==0) ? 1'b0 : r_step; // No output if speed zero
+    assign o_step_pin = (r_max_counter==0) ? 1'b0 : r_step; // No output if speed zero
 
 function [31:0] set_max;
     input  [7:0] speed;

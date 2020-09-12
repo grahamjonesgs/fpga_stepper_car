@@ -103,33 +103,33 @@ module Car_Control_SPI(
     );
     
     // reg to control the SM controller
-    reg                 o_data_DV;
-    reg                 o_dir_L;  
-    reg     [7:0]       o_speed_L; 
-    reg                 o_dir_R;  
-    reg     [7:0]       o_speed_R;
+    reg                 r_data_DV;
+    reg                 r_dir_L;  
+    reg     [7:0]       r_speed_L; 
+    reg                 r_dir_R;  
+    reg     [7:0]       r_speed_R;
     
-    wire                i_step_count_L;
-    wire                i_step_count_R;
+    wire                w_step_count_L;
+    wire                w_step_count_R;
     
      // For SPI data received / for sending
-    wire    [63:0]      i_rec_data_array;  
-    wire                i_rec_data_DV;  
-    reg     [63:0]      o_send_data_array;
-    wire    [3:0]       i_send_message_type;
-    wire                i_send_data_request;
+    wire    [63:0]      w_rec_data_array;  
+    wire                w_rec_data_DV;  
+    reg     [63:0]      r_send_data_array;
+    wire    [3:0]       w_send_message_type;
+    wire                w_send_data_request;
     
     // For step counting
-    reg     [31:0]      step_counter; 
-    reg     [31:0]      max_steps;  
-    reg                 left_right_count;  // which motor to count
-    wire                counting_pin;
-    reg                 counting; // if we are coutning steps 
+    reg     [31:0]      r_step_counter; 
+    reg     [31:0]      r_max_steps;  
+    reg                 r_left_right_count;  // which motor to count
+    wire                w_counting_pin;
+    reg                 w_counting; // if we are coutning steps 
     
     // For controlling the output LED's
-    reg     [7:0]       o_Red_led_status;
-    reg     [7:0]       o_Blue_led_status;
-    reg     [7:0]       o_Green_led_status;
+    reg     [7:0]       r_Red_led_status;
+    reg     [7:0]       r_Blue_led_status;
+    reg     [7:0]       r_Green_led_status;
 
      // For &-seg display
     reg     [31:0]      o_displayed_number; // number to be displayed
@@ -140,27 +140,27 @@ module Car_Control_SPI(
     
     parameter SEND_NOTHING=4'h0, SEND_VERSION=4'h1, SEND_MOTOR_STATUS=4'h2;  // Message subtype for status message. Send_nothing means no request.
     
-    SM_Output SM_Output_L(.i_sysclk(i_sysclk),.i_reset(i_reset),.i_data_DV(o_data_DV),
-    .i_dir(o_dir_L),.i_speed(o_speed_L),.o_dir_pin(o_Left_Front_Dir),.o_step_pin(o_Left_Front_Step),.o_step_counter(i_step_count_L));
+    SM_Output SM_Output_L(.i_sysclk(i_sysclk),.i_reset(i_reset),.i_data_DV(r_data_DV),
+    .i_dir(r_dir_L),.i_speed(r_speed_L),.o_dir_pin(o_Left_Front_Dir),.o_step_pin(o_Left_Front_Step),.o_step_counter(w_step_count_L));
     
-    SM_Output SM_Output_R(.i_sysclk(i_sysclk),.i_reset(i_reset),.i_data_DV(o_data_DV),
-    .i_dir(o_dir_R),.i_speed(o_speed_R),.o_dir_pin(o_Right_Front_Dir),.o_step_pin(o_Right_Front_Step),.o_step_counter(i_step_count_R));
+    SM_Output SM_Output_R(.i_sysclk(i_sysclk),.i_reset(i_reset),.i_data_DV(r_data_DV),
+    .i_dir(r_dir_R),.i_speed(r_speed_R),.o_dir_pin(o_Right_Front_Dir),.o_step_pin(o_Right_Front_Step),.o_step_counter(w_step_count_R));
     
     SPI_Coms SPI_Coms1(.i_sysclk(i_sysclk),.i_reset(i_reset),.i_SPI_Clk(i_SPI_Clk),
-   .i_SPI_MOSI(i_SPI_MOSI),.i_SPI_CS(i_SPI_CS),.o_SPI_MISO(o_SPI_MISO),.o_rec_data_DV(i_rec_data_DV),
-   .o_rec_data_array(i_rec_data_array),.i_send_data_array(o_send_data_array),.o_send_message_type(i_send_message_type),
-   .o_send_data_request(i_send_data_request));
+   .i_SPI_MOSI(i_SPI_MOSI),.i_SPI_CS(i_SPI_CS),.o_SPI_MISO(o_SPI_MISO),.o_rec_data_DV(w_rec_data_DV),
+   .o_rec_data_array(w_rec_data_array),.i_send_data_array(r_send_data_array),.o_send_message_type(w_send_message_type),
+   .o_send_data_request(w_send_data_request));
 `ifdef basys
-    LED_Display_Controller led_display1 (.i_reset(i_reset), .i_sysclk(i_sysclk),
+    Seven_seg_LED_Display_Controller Seven_segled_display1 (.i_reset(i_reset), .i_sysclk(i_sysclk),
     . i_displayed_number(o_displayed_number),.o_Anode_Activate(o_Anode_Activate),.o_LED_cathode(o_LED_cathode));
  `endif   
-    LED_Control red_led (.i_reset(i_reset), .i_sysclk(i_sysclk),.i_mode(o_Red_led_status),.o_LED_pin(o_Red_led)); 
-    LED_Control blue_led (.i_reset(i_reset), .i_sysclk(i_sysclk),.i_mode(o_Blue_led_status),.o_LED_pin(o_Blue_led)); 
-    LED_Control green_led (.i_reset(i_reset), .i_sysclk(i_sysclk),.i_mode(o_Green_led_status),.o_LED_pin(o_Green_led)); 
+    LED_Control red_led (.i_reset(i_reset), .i_sysclk(i_sysclk),.i_mode(r_Red_led_status),.o_LED_pin(o_Red_led)); 
+    LED_Control blue_led (.i_reset(i_reset), .i_sysclk(i_sysclk),.i_mode(r_Blue_led_status),.o_LED_pin(o_Blue_led)); 
+    LED_Control green_led (.i_reset(i_reset), .i_sysclk(i_sysclk),.i_mode(r_Green_led_status),.o_LED_pin(o_Green_led)); 
     
-   /*ila_0  myila(.clk(i_sysclk),.probe0(step_counter),.probe1(max_steps),.probe2(o_speed_L),.probe3(o_speed_R),
+   /*ila_0  myila(.clk(i_sysclk),.probe0(r_step_counter),.probe1(r_max_steps),.probe2(r_speed_L),.probe3(r_speed_R),
   .probe4(8'h0), .probe5(8'h0),.probe6(8'h0),.probe7(8'h0),
-  .probe8(left_right_count),.probe9(o_data_DV),.probe10(o_data_DV),.probe11(1'b0),.probe12(1'b0),
+  .probe8(r_left_right_count),.probe9(r_data_DV),.probe10(r_data_DV),.probe11(1'b0),.probe12(1'b0),
   .probe13(1'b0),.probe14(1'b0),.probe15(1'b0),
   .probe16(1'b0),.probe17(1'b0),.probe18(1'b0),.probe19(1'b0));
    */
@@ -188,15 +188,15 @@ module Car_Control_SPI(
     assign o_Enable_LED=o_Enable;
     initial
     begin
-        o_dir_L=1'b0;
-        o_dir_R=1'b0;
+        r_dir_L=1'b0;
+        r_dir_R=1'b0;
         o_displayed_number=VERSION_STRING;
         o_Enable=1'b0;
-        o_send_data_array=64'h0;
-        o_Red_led_status=8'h0;
-        o_Blue_led_status=8'h0;
-        o_Green_led_status=8'h0;
-        step_counter=32'h0;
+        r_send_data_array=64'h0;
+        r_Red_led_status=8'h0;
+        r_Blue_led_status=8'h0;
+        r_Green_led_status=8'h0;
+        r_step_counter=32'h0;
         `ifndef basys
         o_SPI_Gnd=1'b0;    // Ground SPI pin
         o_Aux_Gnd=1'b0;    // Gound aux outputs
@@ -208,105 +208,105 @@ module Car_Control_SPI(
      if (i_reset==1)                
         begin
             o_displayed_number<=VERSION_STRING;
-            o_speed_L<=8'h0; 
-            o_speed_R<=8'h0; 
-            o_dir_L=1'b0;
-            o_dir_R=1'b0;  
-            o_Red_led_status=8'h0;
-            o_Blue_led_status=8'h0;
-            o_Green_led_status=8'h0;
+            r_speed_L<=8'h0; 
+            r_speed_R<=8'h0; 
+            r_dir_L=1'b0;
+            r_dir_R=1'b0;  
+            r_Red_led_status=8'h0;
+            r_Blue_led_status=8'h0;
+            r_Green_led_status=8'h0;
         end //if reset
         else // if reset
         begin
-            if(i_send_data_request)
+            if(w_send_data_request)
             begin
-                case(i_send_message_type)
+                case(w_send_message_type)
                 SEND_VERSION:
                 begin
-                   o_send_data_array<={32'h0,VERSION_STRING};
+                   r_send_data_array<={32'h0,VERSION_STRING};
                 end
                 SEND_MOTOR_STATUS:
                 begin
-                   o_send_data_array<=64'hFF_EE_DD_CC_BB_AA_99_88; 
+                   r_send_data_array<=64'hFF_EE_DD_CC_BB_AA_99_88; 
                 end
-                default: o_send_data_array<=64'h0;
-                endcase // i_send_message_type
-            end //  if(i_send_message_type!=0)
-            if (i_rec_data_DV==1)
+                default: r_send_data_array<=64'h0;
+                endcase // w_send_message_type
+            end //  if(w_send_message_type!=0)
+            if (w_rec_data_DV==1)
             begin           
-                case (i_rec_data_array[7:0])           
+                case (w_rec_data_array[7:0])           
                 MSG_TYPE_ENABLE:
                 begin
-                    o_Enable<=i_rec_data_array[8];
+                    o_Enable<=w_rec_data_array[8];
                 end // case MSG_TYPE_ENABLE
                 
                 MSG_TYPE_LED: // set LED output values
                 begin
-                    o_Red_led_status=i_rec_data_array[15:8];
-                    o_Blue_led_status=i_rec_data_array[23:16];
-                    o_Green_led_status=i_rec_data_array[31:24];
+                    r_Red_led_status=w_rec_data_array[15:8];
+                    r_Blue_led_status=w_rec_data_array[23:16];
+                    r_Green_led_status=w_rec_data_array[31:24];
                 end // case MSG_TYPE_LED
               
                 MSG_TYPE_MOTOR:
                 begin
-                    step_counter<=32'h0;
-                    if(i_rec_data_array[10]==0)
+                    r_step_counter<=32'h0;
+                    if(w_rec_data_array[10]==0)
                     begin
-                        max_steps<=1'b0;
-                        counting<=1'b0;
+                        r_max_steps<=1'b0;
+                        w_counting<=1'b0;
                     end
                     else
                     begin
-                        max_steps<=i_rec_data_array[55:32];
-                        left_right_count<=i_rec_data_array[11];
-                        counting<=1'b1;
+                        r_max_steps<=w_rec_data_array[55:32];
+                        r_left_right_count<=w_rec_data_array[11];
+                        w_counting<=1'b1;
                     end           
                     // Output the two speeds to the 7 seg
-                    o_displayed_number[3:0]<=i_rec_data_array[29:24]; // Right 1 29:24
+                    o_displayed_number[3:0]<=w_rec_data_array[29:24]; // Right 1 29:24
                     o_displayed_number[7:4]<=4'b0;
-                    o_displayed_number[11:8]<=i_rec_data_array[31:28]; // Right 2 31:28
+                    o_displayed_number[11:8]<=w_rec_data_array[31:28]; // Right 2 31:28
                     o_displayed_number[15:12]<=4'b0;
-                    o_displayed_number[19:16]<=i_rec_data_array[19:16]; // Left 1 19:16
+                    o_displayed_number[19:16]<=w_rec_data_array[19:16]; // Left 1 19:16
                     o_displayed_number[23:20]<=4'b0;
-                    o_displayed_number[27:24]<=i_rec_data_array[23:20]; // Left 2 23:20
+                    o_displayed_number[27:24]<=w_rec_data_array[23:20]; // Left 2 23:20
                     o_displayed_number[31:28]<=4'b0;
                     // Set speed and direction from data
-                    o_speed_L<=i_rec_data_array[23:16];
-                    o_speed_R<=i_rec_data_array[31:24];
-                    o_dir_L<=i_rec_data_array[8];
-                    o_dir_R<=i_rec_data_array[9];
+                    r_speed_L<=w_rec_data_array[23:16];
+                    r_speed_R<=w_rec_data_array[31:24];
+                    r_dir_L<=w_rec_data_array[8];
+                    r_dir_R<=w_rec_data_array[9];
                     // Pulse to motor controller
-                    o_data_DV<=1'b1; 
+                    r_data_DV<=1'b1; 
                 end // case MSG_TYPE_MOTOR
                 default: ; //Ignore and do nothing
-                endcase // i_rec_data_array[7:0]
+                endcase // w_rec_data_array[7:0]
             end
-            else // if (i_rec_data_DV==1)
+            else // if (w_rec_data_DV==1)
             begin
-                if (counting_pin&&counting)
+                if (w_counting_pin&&w_counting)
                 begin
-                    step_counter<=step_counter+1;
-                    if (step_counter>=max_steps)
+                    r_step_counter<=r_step_counter+1;
+                    if (r_step_counter>=r_max_steps)
                     begin
                         // stop motors!!
-                        o_speed_L<=8'h0;
-                        o_speed_R<=8'h0;
-                        o_data_DV<=1'b1;
-                        counting<=1'b0;
-                    end // if (step_counter>max_steps)
+                        r_speed_L<=8'h0;
+                        r_speed_R<=8'h0;
+                        r_data_DV<=1'b1;
+                        w_counting<=1'b0;
+                    end // if (r_step_counter>r_max_steps)
                     else
                     begin
-                        o_data_DV<=1'b0;
-                    end // else if step_counter>max_steps)
-                end // if counting_pin&&counting
+                        r_data_DV<=1'b0;
+                    end // else if r_step_counter>r_max_steps)
+                end // if w_counting_pin&&counting
                 else
-                    o_data_DV<=1'b0;
+                    r_data_DV<=1'b0;
                 begin
-                end // else f counting_pin&&counting 
-            end  // else if (i_rec_data_DV==1)
+                end // else f w_counting_pin&&counting 
+            end  // else if (w_rec_data_DV==1)
         end // if not reset
     end //always
     
-    assign counting_pin = left_right_count ? i_step_count_R :i_step_count_L;   // select which side to count
+    assign w_counting_pin = r_left_right_count ? w_step_count_R :w_step_count_L;   // select which side to count
      
 endmodule
