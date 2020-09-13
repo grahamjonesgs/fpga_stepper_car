@@ -21,32 +21,53 @@
 /*
  8 byte car comtrol message
     Byte 0: Message type, 
-        0x01 - Motor control
+        0x01 - Motor control skid
         0x02 - Enable control
         0x03 - LED control
         0x04 - Status Request
+        0x05 - Motor control independent
         
- Motor Control
+ Motor Control skid
    Byte 1 - directions (bytes 8-15)
         bit 0 - left dir
         bit 1 - right dir
-        bit 2 - mode, 0 for ever, 1 count
-        bit 3 - 0 count left, 1 count right
+        bit 4 - mode, 0 for ever, 1 count
+        bit 5 - 0 count left, 1 count right
    Byte 2 - Left speed (bytes 16-23)
    Btye 3 - Right speed (bytes 24-31)
    Byte 4/5/6 - Max number of step  (bytes 32-55)
    
-   Enable Control
+ Motor Control ind
+   Byte 1 - directions (bytes 8-15)
+        bit 0 - left front dir
+        bit 1 - right front dir
+        bit 2 - left beck dir
+        bit 3 - right back dir
+        
+   Byte 2 - Left front speed (bytes 16-23)
+   Btye 3 - Right front speed (bytes 24-31)
+   Byte 4 - Left back speed (byte 32-39)
+   Byte 5 - Right back speed (byte 40-47)
+   
+ Enable Control
    Byte 1, bit 0 - enable
    
-   LED control
+ LED control
    Byte 0 Red
    Byte 1 Blue
    Byte 2 Green
+   
+   Modes LSN
+   X0 Off
+   X1 On
+   X2 Flash
+   X3 Pulse
+   Speed MSN // only for flash and pulse
+   0x0X Pulse Slow
+   0x1X Pulse Medium
+   0x2X Pulse Fast
+
  */ 
- 
-
-
  
 module Car_Control_SPI(
     input               i_sysclk, // 100 Mhz clock source on Basys 3 FPGA / 12 for DIP board
@@ -104,13 +125,20 @@ module Car_Control_SPI(
     
     // reg to control the SM controller
     reg                 r_data_DV;
-    reg                 r_dir_L;  
-    reg     [7:0]       r_speed_L; 
-    reg                 r_dir_R;  
-    reg     [7:0]       r_speed_R;
+    reg                 r_dir_Left_Front;  
+    reg     [7:0]       r_speed_Left_Front; 
+    reg                 r_dir_Right_Front;  
+    reg     [7:0]       r_speed_Right_Front;
+    reg                 r_dir_Left_Back;  
+    reg     [7:0]       r_speed_Left_Back; 
+    reg                 r_dir_Right_Back;  
+    reg     [7:0]       r_speed_Right_Back;
+
     
-    wire                w_step_count_L;
-    wire                w_step_count_R;
+    wire                w_step_count_Left_Front;
+    wire                w_step_count_Right_Front;
+    wire                w_step_count_Left_Back;
+    wire                w_step_count_Right_Back;
     
      // For SPI data received / for sending
     wire    [63:0]      w_rec_data_array;  
@@ -136,15 +164,21 @@ module Car_Control_SPI(
     
     parameter VERSION_STRING = 32'h20_10_00_06;  // V0.06
     
-    parameter MSG_TYPE_MOTOR=8'h01, MSG_TYPE_ENABLE=8'h02, MSG_TYPE_LED=8'h03, MSG_TYPE_STATUS=8'h04;
+    parameter MSG_TYPE_MOTOR_SKID=8'h01, MSG_TYPE_ENABLE=8'h02, MSG_TYPE_LED=8'h03, MSG_TYPE_STATUS=8'h04, MSG_TYPE_MOTOR_IND=8'h05;
     
     parameter SEND_NOTHING=4'h0, SEND_VERSION=4'h1, SEND_MOTOR_STATUS=4'h2;  // Message subtype for status message. Send_nothing means no request.
     
-    SM_Output SM_Output_L(.i_sysclk(i_sysclk),.i_reset(i_reset),.i_data_DV(r_data_DV),
-    .i_dir(r_dir_L),.i_speed(r_speed_L),.o_dir_pin(o_Left_Front_Dir),.o_step_pin(o_Left_Front_Step),.o_step_counter(w_step_count_L));
+    SM_Output SM_Output_LF(.i_sysclk(i_sysclk),.i_reset(i_reset),.i_data_DV(r_data_DV),
+    .i_dir(r_dir_Left_Front),.i_speed(r_speed_Left_Front),.o_dir_pin(o_Left_Front_Dir),.o_step_pin(o_Left_Front_Step),.o_step_counter(w_step_count_Left_Front));
     
-    SM_Output SM_Output_R(.i_sysclk(i_sysclk),.i_reset(i_reset),.i_data_DV(r_data_DV),
-    .i_dir(r_dir_R),.i_speed(r_speed_R),.o_dir_pin(o_Right_Front_Dir),.o_step_pin(o_Right_Front_Step),.o_step_counter(w_step_count_R));
+    SM_Output SM_Output_RF(.i_sysclk(i_sysclk),.i_reset(i_reset),.i_data_DV(r_data_DV),
+    .i_dir(r_dir_Right_Front),.i_speed(r_speed_Right_Front),.o_dir_pin(o_Right_Front_Dir),.o_step_pin(o_Right_Front_Step),.o_step_counter(w_step_count_Right_Front));
+    
+    SM_Output SM_Output_LB(.i_sysclk(i_sysclk),.i_reset(i_reset),.i_data_DV(r_data_DV),
+    .i_dir(r_dir_Left_Back),.i_speed(r_speed_Left_Back),.o_dir_pin(o_Left_Back_Dir),.o_step_pin(o_Left_Back_Step),.o_step_counter(w_step_count_Left_Back));
+    
+    SM_Output SM_Output_RB(.i_sysclk(i_sysclk),.i_reset(i_reset),.i_data_DV(r_data_DV),
+    .i_dir(r_dir_Right_Back),.i_speed(r_speed_Right_Back),.o_dir_pin(o_Right_Front_Back),.o_step_pin(o_Right_Back_Step),.o_step_counter(w_step_count_Right_Back));
     
     SPI_Coms SPI_Coms1(.i_sysclk(i_sysclk),.i_reset(i_reset),.i_SPI_Clk(i_SPI_Clk),
    .i_SPI_MOSI(i_SPI_MOSI),.i_SPI_CS(i_SPI_CS),.o_SPI_MISO(o_SPI_MISO),.o_rec_data_DV(w_rec_data_DV),
@@ -164,13 +198,7 @@ module Car_Control_SPI(
   .probe13(1'b0),.probe14(1'b0),.probe15(1'b0),
   .probe16(1'b0),.probe17(1'b0),.probe18(1'b0),.probe19(1'b0));
    */
-    // Map back to be same as front
-    
-    
-    assign o_Left_Back_Dir=o_Left_Front_Dir;
-    assign o_Right_Back_Dir=o_Right_Front_Dir;
-    assign o_Left_Back_Step=o_Left_Front_Step;
-    assign o_Right_Back_Step=o_Right_Front_Step;
+
 `ifdef basys    
     //  Set up follow LEDs
     assign o_Left_Front_Dir_LED=o_Left_Front_Dir;
@@ -188,8 +216,10 @@ module Car_Control_SPI(
     assign o_Enable_LED=o_Enable;
     initial
     begin
-        r_dir_L=1'b0;
-        r_dir_R=1'b0;
+        r_dir_Left_Front=1'b0;
+        r_dir_Right_Front=1'b0;
+         r_dir_Left_Back=1'b0;
+        r_dir_Right_Back=1'b0;
         o_displayed_number=VERSION_STRING;
         o_Enable=1'b0;
         r_send_data_array=64'h0;
@@ -208,10 +238,14 @@ module Car_Control_SPI(
      if (i_reset==1)                
         begin
             o_displayed_number<=VERSION_STRING;
-            r_speed_L<=8'h0; 
-            r_speed_R<=8'h0; 
-            r_dir_L=1'b0;
-            r_dir_R=1'b0;  
+            r_speed_Left_Front<=8'h0; 
+            r_speed_Right_Front<=8'h0; 
+            r_dir_Left_Front=1'b0;
+            r_dir_Right_Front=1'b0;  
+            r_speed_Left_Back<=8'h0; 
+            r_speed_Right_Back<=8'h0; 
+            r_dir_Left_Back=1'b0;
+            r_dir_Right_Back=1'b0; 
             r_Red_led_status=8'h0;
             r_Blue_led_status=8'h0;
             r_Green_led_status=8'h0;
@@ -247,7 +281,7 @@ module Car_Control_SPI(
                     r_Green_led_status=w_rec_data_array[31:24];
                 end // case MSG_TYPE_LED
               
-                MSG_TYPE_MOTOR:
+               MSG_TYPE_MOTOR_SKID:
                 begin
                     r_step_counter<=32'h0;
                     if(w_rec_data_array[10]==0)
@@ -271,13 +305,43 @@ module Car_Control_SPI(
                     o_displayed_number[27:24]<=w_rec_data_array[23:20]; // Left 2 23:20
                     o_displayed_number[31:28]<=4'b0;
                     // Set speed and direction from data
-                    r_speed_L<=w_rec_data_array[23:16];
-                    r_speed_R<=w_rec_data_array[31:24];
-                    r_dir_L<=w_rec_data_array[8];
-                    r_dir_R<=w_rec_data_array[9];
+                    r_speed_Left_Front<=w_rec_data_array[23:16];
+                    r_speed_Right_Front<=w_rec_data_array[31:24];
+                    r_dir_Left_Front<=w_rec_data_array[8];
+                    r_dir_Right_Front<=w_rec_data_array[9];
+                    r_speed_Left_Back<=w_rec_data_array[23:16];
+                    r_speed_Right_Back<=w_rec_data_array[31:24];
+                    r_dir_Left_Back<=w_rec_data_array[8];
+                    r_dir_Right_Back<=w_rec_data_array[9];
                     // Pulse to motor controller
                     r_data_DV<=1'b1; 
-                end // case MSG_TYPE_MOTOR
+                end // case MSG_TYPE_MOTOR_SKID
+              
+                MSG_TYPE_MOTOR_IND:
+                begin
+                    w_counting<=1'b0;
+                       
+                    // Output the two speeds to the 7 seg
+                    o_displayed_number[3:0]<=w_rec_data_array[29:24]; // Right 1 29:24
+                    o_displayed_number[7:4]<=4'b0;
+                    o_displayed_number[11:8]<=w_rec_data_array[31:28]; // Right 2 31:28
+                    o_displayed_number[15:12]<=4'b0;
+                    o_displayed_number[19:16]<=w_rec_data_array[19:16]; // Left 1 19:16
+                    o_displayed_number[23:20]<=4'b0;
+                    o_displayed_number[27:24]<=w_rec_data_array[23:20]; // Left 2 23:20
+                    o_displayed_number[31:28]<=4'b0;
+                    // Set speed and direction from data
+                    r_speed_Left_Front<=w_rec_data_array[23:16];
+                    r_speed_Right_Front<=w_rec_data_array[31:24];
+                    r_speed_Left_Back<=w_rec_data_array[39:32];
+                    r_speed_Right_Back<=w_rec_data_array[47:40];
+                    r_dir_Left_Front<=w_rec_data_array[8];
+                    r_dir_Right_Front<=w_rec_data_array[9];
+                    r_dir_Left_Back<=w_rec_data_array[10];
+                    r_dir_Right_Back<=w_rec_data_array[11];
+                    // Pulse to motor controller
+                    r_data_DV<=1'b1; 
+                end // case MSG_TYPE_MOTOR_IND
                 default: ; //Ignore and do nothing
                 endcase // w_rec_data_array[7:0]
             end
@@ -289,8 +353,10 @@ module Car_Control_SPI(
                     if (r_step_counter>=r_max_steps)
                     begin
                         // stop motors!!
-                        r_speed_L<=8'h0;
-                        r_speed_R<=8'h0;
+                        r_speed_Left_Front<=8'h0;
+                        r_speed_Right_Front<=8'h0;
+                        r_speed_Left_Back<=8'h0;
+                        r_speed_Right_Back<=8'h0;
                         r_data_DV<=1'b1;
                         w_counting<=1'b0;
                     end // if (r_step_counter>r_max_steps)
@@ -307,6 +373,6 @@ module Car_Control_SPI(
         end // if not reset
     end //always
     
-    assign w_counting_pin = r_left_right_count ? w_step_count_R :w_step_count_L;   // select which side to count
+    assign w_counting_pin = r_left_right_count ? w_step_count_Right_Front :w_step_count_Left_Front;   // select which side to count
      
 endmodule

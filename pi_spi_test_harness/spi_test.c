@@ -19,8 +19,12 @@
 
 #define LEFT_BACKWARDS 0x01
 #define RIGHT_BACKWARDS 0x02
-#define COUNT_STEPS 0x04
-#define COUNT_RIGHT 0x08
+#define LEFT_FRONT_BACKWARDS 0x01
+#define RIGHT_FRONT_BACKWARDS 0x02
+#define LEFT_BACK_BACKWARDS 0x04
+#define RIGHT_BACK_BACKWARDS 0x08
+#define COUNT_STEPS 0x10
+#define COUNT_RIGHT 0x20
 
 #define POWER_PIN 24
 
@@ -29,31 +33,43 @@
 #define M2_PIN 18
 
 /*
- 8 byte car comtrol message
+8 byte car comtrol message
     Byte 0: Message type, 
-        0x01 - Motor control
+        0x01 - Motor control skid
         0x02 - Enable control
         0x03 - LED control
         0x04 - Status Request
+        0x05 - Motor control independent
         
- Motor Control
+ Motor Control skid
    Byte 1 - directions (bytes 8-15)
         bit 0 - left dir
         bit 1 - right dir
-        bit 2 - mode, 0 for ever, 1 count
-        bit 3 - 0 count left, 1 count right
+        bit 4 - mode, 0 for ever, 1 count
+        bit 5 - 0 count left, 1 count right
    Byte 2 - Left speed (bytes 16-23)
    Btye 3 - Right speed (bytes 24-31)
    Byte 4/5/6 - Max number of step  (bytes 32-55)
    
-   Enable Control
+ Motor Control ind
+   Byte 1 - directions (bytes 8-15)
+        bit 0 - left front dir
+        bit 1 - right front dir
+        bit 2 - left beck dir
+        bit 3 - right back dir
+        
+   Byte 2 - Left front speed (bytes 16-23)
+   Btye 3 - Right front speed (bytes 24-31)
+   Byte 4 - Left back speed (byte 32-39)
+   Byte 5 - Right back speed (byte 40-47)
+   
+ Enable Control
    Byte 1, bit 0 - enable
    
-   LED control
+ LED control
    Byte 0 Red
    Byte 1 Blue
    Byte 2 Green
-   
    
    Modes LSN
    X0 Off
@@ -64,6 +80,7 @@
    0x0X Pulse Slow
    0x1X Pulse Medium
    0x2X Pulse Fast
+
    
    
    
