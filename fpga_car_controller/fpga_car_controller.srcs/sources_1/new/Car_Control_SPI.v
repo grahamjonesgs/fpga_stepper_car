@@ -1,73 +1,60 @@
-`timescale 1ns / 1ps
 //////////////////////////////////////////////////////////////////////////////////
-// Company: 
-// Engineer: 
+//  Top level model for Car Control SPI
+//  Global include defining marco basys is used to control target board. Appropriate
+//  contraint file will also need to be selected
+//
+//  SPI incoming message structure. One start byte, 8 message byte, one checksum byte 
 // 
-// Create Date: 07/31/2020 10:33:34 PM
-// Design Name: 
-// Module Name: Car_Control_SPI
-// Project Name: 
-// Target Devices: 
-// Tool Versions: 
-// Description: 
-// 
-// Dependencies: 
-// 
-// Revision:
-// Revision 0.01 - File Created
-// Additional Comments:
-// 
+//
+// 8 byte car comtrol message
+//    Byte 0: Message type, 
+//        0x01 - Motor control skid
+//        0x02 - Enable control
+//        0x03 - LED control
+//        0x04 - Status Request
+//        0x05 - Motor control independent
+//        
+// Motor Control skid
+//   Byte 1 - directions (bytes 8-15)
+//        bit 0 - left dir
+//        bit 1 - right dir
+//        bit 4 - mode, 0 for ever, 1 count
+//        bit 5 - 0 count left, 1 count right
+//   Byte 2 - Left speed (bytes 16-23)
+//   Btye 3 - Right speed (bytes 24-31)
+//   Byte 4/5/6 - Max number of step  (bytes 32-55)
+//   
+// Motor Control ind
+//   Byte 1 - directions (bytes 8-15)
+//        bit 0 - left front dir
+//        bit 1 - right front dir
+//        bit 2 - left beck dir
+//        bit 3 - right back dir
+//        
+//   Byte 2 - Left front speed (bytes 16-23)
+//   Btye 3 - Right front speed (bytes 24-31)
+//   Byte 4 - Left back speed (byte 32-39)
+//   Byte 5 - Right back speed (byte 40-47)
+//   
+// Enable Control
+//   Byte 1, bit 0 - enable
+//   
+// LED control
+//   Byte 0 Red
+//   Byte 1 Blue
+//   Byte 2 Green
+//   
+//   Modes LSN
+//   X0 Off
+//   X1 On
+//   X2 Flash
+//   X3 Pulse
+//   Speed MSN // only for flash and pulse
+//   0x0X Pulse Slow
+//   0x1X Pulse Medium
+//   0x2X Pulse Fast
+//
 //////////////////////////////////////////////////////////////////////////////////
-/*
- 8 byte car comtrol message
-    Byte 0: Message type, 
-        0x01 - Motor control skid
-        0x02 - Enable control
-        0x03 - LED control
-        0x04 - Status Request
-        0x05 - Motor control independent
-        
- Motor Control skid
-   Byte 1 - directions (bytes 8-15)
-        bit 0 - left dir
-        bit 1 - right dir
-        bit 4 - mode, 0 for ever, 1 count
-        bit 5 - 0 count left, 1 count right
-   Byte 2 - Left speed (bytes 16-23)
-   Btye 3 - Right speed (bytes 24-31)
-   Byte 4/5/6 - Max number of step  (bytes 32-55)
-   
- Motor Control ind
-   Byte 1 - directions (bytes 8-15)
-        bit 0 - left front dir
-        bit 1 - right front dir
-        bit 2 - left beck dir
-        bit 3 - right back dir
-        
-   Byte 2 - Left front speed (bytes 16-23)
-   Btye 3 - Right front speed (bytes 24-31)
-   Byte 4 - Left back speed (byte 32-39)
-   Byte 5 - Right back speed (byte 40-47)
-   
- Enable Control
-   Byte 1, bit 0 - enable
-   
- LED control
-   Byte 0 Red
-   Byte 1 Blue
-   Byte 2 Green
-   
-   Modes LSN
-   X0 Off
-   X1 On
-   X2 Flash
-   X3 Pulse
-   Speed MSN // only for flash and pulse
-   0x0X Pulse Slow
-   0x1X Pulse Medium
-   0x2X Pulse Fast
-
- */ 
  
 module Car_Control_SPI(
     input               i_sysclk, // 100 Mhz clock source on Basys 3 FPGA / 12 for DIP board
@@ -185,7 +172,7 @@ module Car_Control_SPI(
    .o_rec_data_array(w_rec_data_array),.i_send_data_array(r_send_data_array),.o_send_message_type(w_send_message_type),
    .o_send_data_request(w_send_data_request));
 `ifdef basys
-    Seven_seg_LED_Display_Controller Seven_segled_display1 (.i_reset(i_reset), .i_sysclk(i_sysclk),
+    Seven_seg_LED_Display_Controller Seven_seg_led_display1 (.i_reset(i_reset), .i_sysclk(i_sysclk),
     . i_displayed_number(o_displayed_number),.o_Anode_Activate(o_Anode_Activate),.o_LED_cathode(o_LED_cathode));
  `endif   
     LED_Control red_led (.i_reset(i_reset), .i_sysclk(i_sysclk),.i_mode(r_Red_led_status),.o_LED_pin(o_Red_led)); 

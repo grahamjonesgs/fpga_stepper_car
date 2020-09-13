@@ -1,33 +1,17 @@
 `timescale 1ns / 1ps
 //////////////////////////////////////////////////////////////////////////////////
-// Company: 
-// Engineer: 
+//  Will control single LED on, off, flash and pulse with three different speeds.
 // 
-// Create Date: 08/07/2020 11:06:44 AM
-// Design Name: 
-// Module Name: LED_Control
-// Project Name: 
-// Target Devices: 
-// Tool Versions: 
-// Description: 
-// 
-// Dependencies: 
-// 
-// Revision:
-// Revision 0.01 - File Created
-// Additional Comments:
-// 
+//   Modes LSN
+//   X0 Off
+//   X1 On
+//   X2 Flash
+//   X3 Pulse
+//   Speed MSN // only for flash and pulse
+//   0x0X Pulse Slow
+//   0x1X Pulse Medium
+//   0x2X Pulse Fast
 //////////////////////////////////////////////////////////////////////////////////
-//  Drive signal LED with vaiour modes
-// Modes LSN
-// X0 Off
-// X1 On
-// X2 Flash
-// X3 Pulse
-// Speed MSN // only for flash and pulse
-// 0x0X Pulse Slow
-// 0x1X Pulse Medium
-// 0x2X Pulse Fast
 
 module LED_Control(
     input               i_sysclk, // 100 Mhz clock source on Basys 3 FPGA

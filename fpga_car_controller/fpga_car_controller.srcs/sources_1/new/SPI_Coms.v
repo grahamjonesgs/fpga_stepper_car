@@ -1,21 +1,10 @@
-`timescale 1ns / 1ps
 //////////////////////////////////////////////////////////////////////////////////
-// Company: 
-// Engineer: 
-// 
-// Create Date: 07/17/2020 10:31:08 PM
-// Design Name: 
-// Module Name: SPI_Coms
-// Project Name: 
-// Target Devices: 
-// Tool Versions: 
-// Description: 
-// 
-// Dependencies: 
-// 
-// Revision:
-// Revision 0.01 - File Created
-// Additional Comments:
+//  SPI coms module uses SPI-slave module. Will accept incomming message
+//  and if checksum is correct will flag to calling module through o_rec_data_DV
+//  Timeout based on 100Mhz clock
+//
+//  Will response bytes and status messages.
+//
 // 
 //////////////////////////////////////////////////////////////////////////////////
 

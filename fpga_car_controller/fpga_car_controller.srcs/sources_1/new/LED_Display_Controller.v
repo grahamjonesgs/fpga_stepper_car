@@ -1,44 +1,19 @@
-`timescale 1ns / 1ps
 //////////////////////////////////////////////////////////////////////////////////
-// Company: 
-// Engineer: 
-// 
-// Create Date: 07/17/2020 10:31:08 PM
-// Design Name: 
-// Module Name: Seven_seg_LED_Display_Controller
-// Project Name: 
-// Target Devices: 
-// Tool Versions: 
-// Description: 
-// 
-// Dependencies: 
-// 
-// Revision:
-// Revision 0.01 - File Created
-// Additional Comments:
-// 
+//  Controls sevent segment display on Basys 3 board using PWM
+//  Outputs hex characters, plus U (like V for version) and dash
 //////////////////////////////////////////////////////////////////////////////////
-//  0X for hex
-//  1X for decimal number with decimal point
-//  20 for V char
-//  21 for dash
 
 module Seven_seg_LED_Display_Controller(
     input               i_sysclk, // 100 Mhz clock source on Basys 3 FPGA
-    input               i_reset, // reset
+    input               i_reset, 
     input       [31:0]  i_displayed_number, // Number to display
-    output reg  [3:0]   o_Anode_Activate, // anode signals of the 7-segment LED display
-    output reg  [7:0]   o_LED_cathode// cathode patterns of the 7-segment LED display
+    output reg  [3:0]   o_Anode_Activate, 
+    output reg  [7:0]   o_LED_cathode
     );
     
-    
     reg     [7:0]   r_LED_Bytes;
-    reg     [19:0]  r_refresh_counter; // 20-bit for creating 10.5ms refresh period or 380Hz refresh rate
-             // the first 2 MSB bits for creating 4 LED-activating signals with 2.6ms digit period
-    wire    [1:0]   r_LED_activating_counter; 
-                 // count     0    ->  1  ->  2  ->  3
-              // activates    LED1    LED2   LED3   LED4
-             // and repeat
+    reg     [19:0]  r_refresh_counter; 
+    wire    [1:0]   r_LED_activating_counter; // Which LED block to use
      
     always @(posedge i_sysclk or posedge i_reset)
     begin 
@@ -48,42 +23,28 @@ module Seven_seg_LED_Display_Controller(
             r_refresh_counter <= r_refresh_counter + 1;
     end 
     assign r_LED_activating_counter = r_refresh_counter[19:18];
-    // anode activating signals for 4 LEDs, digit period of 2.6ms
-    // decoder to generate anode signals 
+ 
     always @(*)
     begin
         case(r_LED_activating_counter)
         2'b00: begin
             o_Anode_Activate = 4'b0111; 
-            // activate LED1 and Deactivate LED2, LED3, LED4
-            //LED_BCD = i_displayed_number/4096;
             r_LED_Bytes = i_displayed_number[31:24];
-            // the first digit of the 16-bit number
               end
         2'b01: begin
             o_Anode_Activate = 4'b1011; 
-            // activate LED2 and Deactivate LED1, LED3, LED4
-            //LED_BCD = (i_displayed_number % 4096)/256;
             r_LED_Bytes = i_displayed_number[23:16];
-            // the second digit of the 16-bit number
               end
         2'b10: begin
             o_Anode_Activate = 4'b1101; 
-            // activate LED3 and Deactivate LED2, LED1, LED4
-            //LED_BCD = ((i_displayed_number % 4096)%256)/16;
             r_LED_Bytes = i_displayed_number[15:8];
-            // the third digit of the 16-bit number
                 end
         2'b11: begin
             o_Anode_Activate = 4'b1110; 
-            // activate LED4 and Deactivate LED2, LED3, LED1
-            //LED_BCD = ((i_displayed_number % 4096)%256)%16;
             r_LED_Bytes = i_displayed_number[7:0];
-            // the fourth digit of the 16-bit number    
                end
         endcase
     end
-    // Cathode patterns of the 7-segment LED display. MSB codes for decimal point
     always @(*)
     begin
         case(r_LED_Bytes)
@@ -114,8 +75,7 @@ module Seven_seg_LED_Display_Controller(
         8'h18: o_LED_cathode = 8'b00000000; // "8."     
         8'h19: o_LED_cathode = 8'b00000100; // "9." 
         8'h20: o_LED_cathode = 8'b11000001; // "V" 
-        8'h21: o_LED_cathode = 8'b11111110; // "-" 
-        
+        8'h21: o_LED_cathode = 8'b11111110; // "-"    
        
         default:o_LED_cathode = 8'b11111110; // "-" 
         endcase
