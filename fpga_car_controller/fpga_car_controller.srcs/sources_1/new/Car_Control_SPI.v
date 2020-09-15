@@ -83,7 +83,7 @@ module Car_Control_SPI(
     output              o_Enable_LED,
   
 
-`ifdef basys      
+`ifdef BOARD_BASYS      
     // Follow LED's all on BASYS board for debug
     output              o_Left_Front_Dir_LED,
     output              o_Left_Back_Dir_LED,
@@ -101,8 +101,12 @@ module Car_Control_SPI(
     output      [3:0]   o_Anode_Activate, // anode signals of the 7-segment LED display
     output      [7:0]   o_LED_cathode,// cathode patterns of the 7-segment LED display
  `else
+    `ifdef  BOARD_CMOD
     output      reg     o_SPI_Gnd,
     output      reg     o_Aux_Gnd,
+    `else
+    $error("Either BOARD_BASYS or BOARD_CMOD must be defined")
+    `endif ifdef  BOARD_CMOD
  `endif
  
     output              o_Red_led,
@@ -171,10 +175,10 @@ module Car_Control_SPI(
    .i_SPI_MOSI(i_SPI_MOSI),.i_SPI_CS(i_SPI_CS),.o_SPI_MISO(o_SPI_MISO),.o_rec_data_DV(w_rec_data_DV),
    .o_rec_data_array(w_rec_data_array),.i_send_data_array(r_send_data_array),.o_send_message_type(w_send_message_type),
    .o_send_data_request(w_send_data_request));
-`ifdef basys
+`ifdef BOARD_BASYS
     Seven_seg_LED_Display_Controller Seven_seg_led_display1 (.i_reset(i_reset), .i_sysclk(i_sysclk),
     . i_displayed_number(o_displayed_number),.o_Anode_Activate(o_Anode_Activate),.o_LED_cathode(o_LED_cathode));
- `endif   
+ `endif   // fdef BOARD_BASYS
     LED_Control red_led (.i_reset(i_reset), .i_sysclk(i_sysclk),.i_mode(r_Red_led_status),.o_LED_pin(o_Red_led)); 
     LED_Control blue_led (.i_reset(i_reset), .i_sysclk(i_sysclk),.i_mode(r_Blue_led_status),.o_LED_pin(o_Blue_led)); 
     LED_Control green_led (.i_reset(i_reset), .i_sysclk(i_sysclk),.i_mode(r_Green_led_status),.o_LED_pin(o_Green_led)); 
@@ -186,7 +190,7 @@ module Car_Control_SPI(
   .probe16(1'b0),.probe17(1'b0),.probe18(1'b0),.probe19(1'b0));
    */
 
-`ifdef basys    
+`ifdef BOARD_BASYS    
     //  Set up follow LEDs
     assign o_Left_Front_Dir_LED=o_Left_Front_Dir;
     assign o_Left_Back_Dir_LED=o_Left_Back_Dir;
@@ -199,7 +203,7 @@ module Car_Control_SPI(
     assign o_Red_led_LED=o_Red_led;
     assign o_Blue_led_LED=o_Blue_led;
     assign o_Green_led_LED=o_Green_led;
-`endif    
+`endif  // ifdef BOARD_BASYS
     assign o_Enable_LED=o_Enable;
     initial
     begin
@@ -214,10 +218,10 @@ module Car_Control_SPI(
         r_Blue_led_status=8'h0;
         r_Green_led_status=8'h0;
         r_step_counter=32'h0;
-        `ifndef basys
+        `ifdef BOARD_CMOD
         o_SPI_Gnd=1'b0;    // Ground SPI pin
         o_Aux_Gnd=1'b0;    // Gound aux outputs
-        `endif
+        `endif  //  ifdef BOARD_CMOD
     end // Init block
     
     always @(posedge i_sysclk)

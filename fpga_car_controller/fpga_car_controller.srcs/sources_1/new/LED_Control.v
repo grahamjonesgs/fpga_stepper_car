@@ -21,19 +21,16 @@ module LED_Control(
     output   reg        o_LED_pin   
     );
     
-`ifdef basys
+`ifdef BOARD_BASYS
   parameter  SLOW_TIMER_INC = 3; //  Just fater than on change per second
   parameter  MEDIUM_TIMER_INC = 9; // Twice slow speed
   parameter  FAST_TIMER_INC = 32 ; // 5 times slow speed
-  `else
+  parameter  COUNTER_MAX = 28'hFFFFFFF; // Top of counter, don't want it to wrap 
+  `endif
+  `ifdef BOARD_CMOD
   parameter  SLOW_TIMER_INC = 2; //  Just fater than on change per second
   parameter  MEDIUM_TIMER_INC = 4; // Twice slow speed
   parameter  FAST_TIMER_INC = 16 ; // 5 times slow speed
-  `endif
-  
-  `ifdef basys
-  parameter  COUNTER_MAX = 28'hFFFFFFF; // Top of counter, don't want it to wrap 
-  `else
   parameter  COUNTER_MAX = 28'hFFFFFF; // Top of counter, don't want it to wrap one 16th for 12Mhz clock (ends up twice as fast)
   `endif
   
@@ -74,9 +71,10 @@ always @(posedge i_sysclk)
             2: o_LED_pin<=r_count_down;  // Blink
             3:                         // Fade
             begin
-                `ifdef basys
+                `ifdef BOARD_BASYS
                 if (r_flash_timer[27:20] > r_flash_timer[19:12]) 
-                `else
+                `endif
+                `ifdef BOARD_CMOD
                 if (r_flash_timer[23:16] > r_flash_timer[15:8]) 
                 `endif
                 begin

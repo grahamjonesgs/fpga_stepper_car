@@ -73,9 +73,10 @@ module SM_Output(
 
 function [31:0] set_max;
     input  [7:0] speed;
-    `ifdef basys
+    `ifdef BOARD_BASYS
     parameter set_fastest=146;   // fastest speed when set to 1 is 2/255 second, double this to half time. Motor only works on rising edge. est 275 for max of 35,000
-    `else
+    `endif
+    `ifdef BOARD_CMOD
     parameter set_fastest=1222;  // Approx for 12Mhx clock
     `endif
     begin
