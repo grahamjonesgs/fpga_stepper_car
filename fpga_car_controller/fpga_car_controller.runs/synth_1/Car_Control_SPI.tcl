@@ -88,7 +88,6 @@ OPTRACE "Adding files" START { }
 read_verilog -library xil_defaultlib {
   /home/graham/Documents/fpga_stepper_car/fpga_car_controller/fpga_car_controller.srcs/sources_1/new/defines.v
   /home/graham/Documents/fpga_stepper_car/fpga_car_controller/fpga_car_controller.srcs/sources_1/new/LED_Control.v
-  /home/graham/Documents/fpga_stepper_car/fpga_car_controller/fpga_car_controller.srcs/sources_1/new/LED_Display_Controller.v
   /home/graham/Documents/fpga_stepper_car/fpga_car_controller/fpga_car_controller.srcs/sources_1/new/SM_Output.v
   /home/graham/Documents/fpga_stepper_car/fpga_car_controller/fpga_car_controller.srcs/sources_1/new/SPI_Coms.v
   /home/graham/Documents/fpga_stepper_car/fpga_car_controller/fpga_car_controller.srcs/sources_1/new/SPI_Slave.v
@@ -103,8 +102,8 @@ OPTRACE "Adding files" END { }
 foreach dcp [get_files -quiet -all -filter file_type=="Design\ Checkpoint"] {
   set_property used_in_implementation false $dcp
 }
-read_xdc {{/home/graham/Documents/fpga_stepper_car/fpga_car_controller/fpga_car_controller.srcs/Basys/imports/new/Constraint Basys.xdc}}
-set_property used_in_implementation false [get_files {{/home/graham/Documents/fpga_stepper_car/fpga_car_controller/fpga_car_controller.srcs/Basys/imports/new/Constraint Basys.xdc}}]
+read_xdc {{/home/graham/Documents/fpga_stepper_car/fpga_car_controller/fpga_car_controller.srcs/CMOD/imports/new/Constraint CMOD.xdc}}
+set_property used_in_implementation false [get_files {{/home/graham/Documents/fpga_stepper_car/fpga_car_controller/fpga_car_controller.srcs/CMOD/imports/new/Constraint CMOD.xdc}}]
 
 set_param ips.enableIPCacheLiteLoad 1
 close [open __synthesis_is_running__ w]

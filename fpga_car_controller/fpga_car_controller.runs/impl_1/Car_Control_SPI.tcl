@@ -136,7 +136,7 @@ OPTRACE "set parameters" END { }
 OPTRACE "add files" START { }
   add_files -quiet /home/graham/Documents/fpga_stepper_car/fpga_car_controller/fpga_car_controller.runs/synth_1/Car_Control_SPI.dcp
 OPTRACE "read constraints: implementation" START { }
-  read_xdc {{/home/graham/Documents/fpga_stepper_car/fpga_car_controller/fpga_car_controller.srcs/Basys/imports/new/Constraint Basys.xdc}}
+  read_xdc {{/home/graham/Documents/fpga_stepper_car/fpga_car_controller/fpga_car_controller.srcs/CMOD/imports/new/Constraint CMOD.xdc}}
 OPTRACE "read constraints: implementation" END { }
 OPTRACE "add files" END { }
 OPTRACE "link_design" START { }

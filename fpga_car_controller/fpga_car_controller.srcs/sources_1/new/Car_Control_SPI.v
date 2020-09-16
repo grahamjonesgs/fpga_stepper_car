@@ -100,13 +100,12 @@ module Car_Control_SPI(
    
     output      [3:0]   o_Anode_Activate, // anode signals of the 7-segment LED display
     output      [7:0]   o_LED_cathode,// cathode patterns of the 7-segment LED display
- `else
-    `ifdef  BOARD_CMOD
+ `elsif BOARD_CMOD
+    
     output      reg     o_SPI_Gnd,
     output      reg     o_Aux_Gnd,
     `else
-    $error("Either BOARD_BASYS or BOARD_CMOD must be defined")
-    `endif ifdef  BOARD_CMOD
+    $error("Either BOARD_BASYS or BOARD_CMOD must be defined");   
  `endif
  
     output              o_Red_led,
