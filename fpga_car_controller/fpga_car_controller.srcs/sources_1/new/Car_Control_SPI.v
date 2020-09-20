@@ -203,15 +203,19 @@ module Car_Control_SPI(
     assign o_Blue_led_LED=o_Blue_led;
     assign o_Green_led_LED=o_Green_led;
 `endif  // ifdef BOARD_BASYS
-    assign o_Enable_LED=o_Enable;
+    assign o_Enable_LED=~o_Enable;
     initial
     begin
         r_dir_Left_Front=1'b0;
         r_dir_Right_Front=1'b0;
-         r_dir_Left_Back=1'b0;
+        r_dir_Left_Back=1'b0;
         r_dir_Right_Back=1'b0;
+        r_speed_Left_Front<=8'h0; 
+        r_speed_Right_Front<=8'h0;
+        r_speed_Left_Back<=8'h0; 
+        r_speed_Right_Back<=8'h0;
         o_displayed_number=VERSION_STRING;
-        o_Enable=1'b0;
+        o_Enable=1'b1;  // High is off
         r_send_data_array=64'h0;
         r_Red_led_status=8'h0;
         r_Blue_led_status=8'h0;
@@ -239,6 +243,7 @@ module Car_Control_SPI(
             r_Red_led_status=8'h0;
             r_Blue_led_status=8'h0;
             r_Green_led_status=8'h0;
+            o_Enable=1'b1;  // High is off
         end //if reset
         else // if reset
         begin

@@ -77,7 +77,7 @@ function [31:0] set_max;
     parameter set_fastest=146;   // fastest speed when set to 1 is 2/255 second, double this to half time. Motor only works on rising edge. est 275 for max of 35,000
     `endif
     `ifdef BOARD_CMOD
-    parameter set_fastest=1222;  // Approx for 12Mhx clock
+    parameter set_fastest=1222;  // Approx for 12Mhx clock, set by experimentation
     `endif
     begin
         case(speed)
