@@ -54,6 +54,13 @@
 //   0x1X Pulse Medium
 //   0x2X Pulse Fast
 //
+//   Motor Status Message
+//   Byte 0 Status
+//     Bit 0 enable
+//     Bit 1 skid mode, 1 for skid mode 0 for independent
+//     Bit 2 Limit, 1 for limit mode
+//   Byte 1-3 remaining turns (bits 8-31)
+//
 //////////////////////////////////////////////////////////////////////////////////
  
 module Car_Control_SPI(
@@ -104,6 +111,7 @@ module Car_Control_SPI(
     
     output      reg     o_SPI_Gnd,
     output      reg     o_Aux_Gnd,
+    output              o_msg_LED,
     `else
     $error("Either BOARD_BASYS or BOARD_CMOD must be defined");   
  `endif
@@ -138,8 +146,8 @@ module Car_Control_SPI(
     wire                w_send_data_request;
     
     // For step counting
-    reg     [31:0]      r_step_counter; 
-    reg     [31:0]      r_max_steps;  
+    reg     [23:0]      r_step_counter; 
+    reg     [23:0]      r_max_steps;  
     reg                 r_left_right_count;  // which motor to count
     wire                w_counting_pin;
     reg                 w_counting; // if we are coutning steps 
@@ -151,6 +159,9 @@ module Car_Control_SPI(
 
      // For &-seg display
     reg     [31:0]      o_displayed_number; // number to be displayed
+    
+    // Motor status message
+    reg     [63:0]      r_motor_status_message;
     
     parameter VERSION_STRING = 32'h20_10_00_06;  // V0.06
     
@@ -181,6 +192,9 @@ module Car_Control_SPI(
     LED_Control red_led (.i_reset(i_reset), .i_sysclk(i_sysclk),.i_mode(r_Red_led_status),.o_LED_pin(o_Red_led)); 
     LED_Control blue_led (.i_reset(i_reset), .i_sysclk(i_sysclk),.i_mode(r_Blue_led_status),.o_LED_pin(o_Blue_led)); 
     LED_Control green_led (.i_reset(i_reset), .i_sysclk(i_sysclk),.i_mode(r_Green_led_status),.o_LED_pin(o_Green_led)); 
+ `ifdef BOARD_CMOD
+    LED_Control msg_led (.i_reset(i_reset), .i_sysclk(i_sysclk),.i_mode(8'h13),.o_LED_pin(o_msg_LED));
+ `endif
     
    /*ila_0  myila(.clk(i_sysclk),.probe0(r_step_counter),.probe1(r_max_steps),.probe2(r_speed_L),.probe3(r_speed_R),
   .probe4(8'h0), .probe5(8'h0),.probe6(8'h0),.probe7(8'h0),
@@ -220,7 +234,7 @@ module Car_Control_SPI(
         r_Red_led_status=8'h0;
         r_Blue_led_status=8'h0;
         r_Green_led_status=8'h0;
-        r_step_counter=32'h0;
+        r_step_counter=24'h0;
         `ifdef BOARD_CMOD
         o_SPI_Gnd=1'b0;    // Ground SPI pin
         o_Aux_Gnd=1'b0;    // Gound aux outputs
@@ -256,7 +270,7 @@ module Car_Control_SPI(
                 end
                 SEND_MOTOR_STATUS:
                 begin
-                   r_send_data_array<=64'hFF_EE_DD_CC_BB_AA_99_88; 
+                   r_send_data_array<=r_motor_status_message; 
                 end
                 default: r_send_data_array<=64'h0;
                 endcase // w_send_message_type
@@ -266,7 +280,8 @@ module Car_Control_SPI(
                 case (w_rec_data_array[7:0])           
                 MSG_TYPE_ENABLE:
                 begin
-                    o_Enable<=w_rec_data_array[8];
+                    o_Enable=w_rec_data_array[8];
+                    r_motor_status_message[0]<=o_Enable;
                 end // case MSG_TYPE_ENABLE
                 
                 MSG_TYPE_LED: // set LED output values
@@ -278,16 +293,19 @@ module Car_Control_SPI(
               
                MSG_TYPE_MOTOR_SKID:
                 begin
-                    r_step_counter<=32'h0;
-                    if(w_rec_data_array[10]==0)
+                    r_motor_status_message[1]=1'b1;
+                    r_step_counter<=24'h0;
+                    if(w_rec_data_array[10]==0) // limit steps or not
                     begin
-                        r_max_steps<=1'b0;
+                        r_max_steps<=24'b0;
                         w_counting<=1'b0;
+                        r_motor_status_message[2]=1'b0;
                     end
                     else
                     begin
                         r_max_steps<=w_rec_data_array[55:32];
                         r_left_right_count<=w_rec_data_array[11];
+                        r_motor_status_message[2]=1'b1;
                         w_counting<=1'b1;
                     end           
                     // Output the two speeds to the 7 seg
@@ -315,6 +333,7 @@ module Car_Control_SPI(
                 MSG_TYPE_MOTOR_IND:
                 begin
                     w_counting<=1'b0;
+                    r_motor_status_message[1]=1'b0;
                        
                     // Output the two speeds to the 7 seg
                     o_displayed_number[3:0]<=w_rec_data_array[29:24]; // Right 1 29:24
@@ -345,6 +364,8 @@ module Car_Control_SPI(
                 if (w_counting_pin&&w_counting)
                 begin
                     r_step_counter<=r_step_counter+1;
+                    r_motor_status_message[31:8]<=r_step_counter[23:0];
+                    r_motor_status_message[55:32]<=24'h01_02_03;
                     if (r_step_counter>=r_max_steps)
                     begin
                         // stop motors!!

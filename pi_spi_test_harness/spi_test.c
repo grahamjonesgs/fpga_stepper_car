@@ -19,12 +19,8 @@
 
 #define LEFT_BACKWARDS 0x01
 #define RIGHT_BACKWARDS 0x02
-#define LEFT_FRONT_BACKWARDS 0x01
-#define RIGHT_FRONT_BACKWARDS 0x02
-#define LEFT_BACK_BACKWARDS 0x04
-#define RIGHT_BACK_BACKWARDS 0x08
-#define COUNT_STEPS 0x10
-#define COUNT_RIGHT 0x20
+#define COUNT_STEPS 0x04
+#define COUNT_RIGHT 0x08
 
 #define POWER_PIN 24
 
@@ -33,43 +29,31 @@
 #define M2_PIN 18
 
 /*
-8 byte car comtrol message
+ 8 byte car comtrol message
     Byte 0: Message type, 
-        0x01 - Motor control skid
+        0x01 - Motor control
         0x02 - Enable control
         0x03 - LED control
         0x04 - Status Request
-        0x05 - Motor control independent
         
- Motor Control skid
+ Motor Control
    Byte 1 - directions (bytes 8-15)
         bit 0 - left dir
         bit 1 - right dir
-        bit 4 - mode, 0 for ever, 1 count
-        bit 5 - 0 count left, 1 count right
+        bit 2 - mode, 0 for ever, 1 count
+        bit 3 - 0 count left, 1 count right
    Byte 2 - Left speed (bytes 16-23)
    Btye 3 - Right speed (bytes 24-31)
    Byte 4/5/6 - Max number of step  (bytes 32-55)
    
- Motor Control ind
-   Byte 1 - directions (bytes 8-15)
-        bit 0 - left front dir
-        bit 1 - right front dir
-        bit 2 - left beck dir
-        bit 3 - right back dir
-        
-   Byte 2 - Left front speed (bytes 16-23)
-   Btye 3 - Right front speed (bytes 24-31)
-   Byte 4 - Left back speed (byte 32-39)
-   Byte 5 - Right back speed (byte 40-47)
-   
- Enable Control
+   Enable Control
    Byte 1, bit 0 - enable
    
- LED control
+   LED control
    Byte 0 Red
    Byte 1 Blue
    Byte 2 Green
+   
    
    Modes LSN
    X0 Off
@@ -80,7 +64,6 @@
    0x0X Pulse Slow
    0x1X Pulse Medium
    0x2X Pulse Fast
-
    
    
    
@@ -283,11 +266,13 @@ int main (int argc, char **argv)
                         speed++;
                         if(speed>255) speed=255;
                         printf("Speed now %i steps M%i%i%i\n",speed, M0,M1,M2);
+                        set_motor (speed,speed,direction,direction);
                         break;
                 case 's':
                         speed--;
                         if(speed<0) speed=0;
                         printf("Speed now %i steps M%i%i%i\n",speed, M0,M1,M2);
+                        set_motor (speed,speed,direction,direction);
                         break;
                 case 'p':
                         power=!power;
@@ -316,9 +301,12 @@ int main (int argc, char **argv)
                 case 'd':
                         direction=!direction;
                         printf("Direction now %i\n",direction);
+                        set_motor (speed,speed,direction,direction);
                         break;
                 case 'x':
-                        printf("Start now\n");
+                        printf("Stop now\n");
+                        set_motor (0,0,direction,direction);
+                        
                         break;
                 case '0':
                         M0=!M0;
@@ -341,6 +329,9 @@ int main (int argc, char **argv)
                 case 'v':
                         read_version_message();
                         break;
+                case 'm':
+                        read_motor_message();
+                        break;
                 case 'l':
                 		printf("LED flash");
                         send_led(0x02,0x12,0x22);;
@@ -353,9 +344,22 @@ int main (int argc, char **argv)
                 		printf("LED on");
                         send_led(0x01,0x01,0x01);;
                         break;
+            	case '5':
+            			printf("5 rotations current speed");
+            			set_motor_limit (speed, speed, direction, direction, 200*16*5, 0);
+            			break;
+            	case '6':
+            			printf("100 fast rotations");
+            			set_motor_limit (255, 255, direction, direction, 200*16*100, 0);
+            			break;
+            	case '7':
+            			printf("1000 fast rotations");
+            			set_motor_limit (255, 255, direction, direction, 200*16*1000, 0);
+            			break;
+				
 				
                 }
-                set_motor (speed,speed,direction,direction);
+    
                 
         } while (c!='q');
         system ("/bin/stty cooked");
