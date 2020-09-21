@@ -87,6 +87,7 @@ int message_send(char* msg_buf)
         char full_msg[255];
         int counter;
         char ret_code;
+        char crc;
 
         full_msg[0]=START_MSG_CODE; // Start msg char
         for (int i=0; i<8; i++) {
@@ -98,8 +99,8 @@ int message_send(char* msg_buf)
         {
                 counter=counter+full_msg[i];
         }
-
-        full_msg[9]=counter%256; // set CRC value
+        crc= ~(counter%256)+1;
+        full_msg[9]=crc; // set CRC value
 
         for (int i=0; i<MESSAGE_TRIES; i++)
         {
@@ -138,25 +139,53 @@ int enable_motor(int flag) {
 int read_version_message(void) {
         char r_msg[255];
         char msg;
+        char crc;
 
         msg=0x21; // Request message flag
         spi_write(pi, spi_handle, &msg, 1); // Request
-        spi_read(pi,spi_handle,r_msg,8);
+        spi_read(pi,spi_handle,r_msg,9);
+        int counter;
 
-        printf("Version message %02X %02X %02X %02X %02X %02X %02X %02X\n",r_msg[7],r_msg[6],r_msg[5],r_msg[4],r_msg[3],r_msg[2],r_msg[1],r_msg[0]);
-        printf("Version is %i.%i%i\n",r_msg[2]&0x08,r_msg[1],r_msg[0]);
+        counter=0;
+        for (int i=0; i<8; i++)
+        {
+                counter=counter+r_msg[i];
+        }
+        crc = ~(counter%256)+1;
+		if(r_msg[8]!=crc) {
+        	printf("Error!!! Check byte received %02X, calculated %02X\n",r_msg[8], crc);
+        }
+        else {
+       	    printf("Version message %02X %02X %02X %02X %02X %02X %02X %02X\n",r_msg[7],r_msg[6],r_msg[5],r_msg[4],r_msg[3],r_msg[2],r_msg[1],r_msg[0]);
+    	    printf("Version is %i.%i%i\n",r_msg[2]&0x08,r_msg[1],r_msg[0]);
+        }
+        
 
 }
 
 int read_motor_message(void) {
         char r_msg[255];
         char msg;
+        int counter;
+        char crc;
 
         msg=0x22; // Request message flag
         spi_write(pi, spi_handle, &msg, 1); // Request
-        spi_read(pi,spi_handle,r_msg,8);
+        spi_read(pi,spi_handle,r_msg,12);
 
+        counter=0;
+        for (int i=0; i<8; i++)
+        {
+                counter=counter+r_msg[i];
+        }
+        crc = ~(counter%256)+1;
+		if(r_msg[8]!=crc) {
+        printf("Error!!! Check byte received %02X, calculated %02X\n",r_msg[8], crc);
+        }
+        else {
         printf("Motor message %02X %02X %02X %02X %02X %02X %02X %02X\n",r_msg[7],r_msg[6],r_msg[5],r_msg[4],r_msg[3],r_msg[2],r_msg[1],r_msg[0]);
+        }
+        
 
 }
 
@@ -250,7 +279,7 @@ int main (int argc, char **argv)
 
         }
         
-        spi_handle=spi_open(pi, 0, 1e7, 0);
+        spi_handle=spi_open(pi, 0, 5e5, 0);
         read_version_message();
 
 

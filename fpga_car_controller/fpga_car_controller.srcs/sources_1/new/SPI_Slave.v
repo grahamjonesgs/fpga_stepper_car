@@ -59,7 +59,7 @@ module SPI_Slave
   .probe4(r_TX_Byte), .probe5(i_TX_Byte),.probe6(old_r_TX_Bit_Count),.probe7(r_TX_Bit_Count),
   .probe8(i_Rst_L),.probe9(r_RX_Byte),.probe10(i_SPI_Clk),.probe11(i_SPI_MOSI),.probe12(i_SPI_CS_n),
   .probe13(r_RX_Done),.probe14(r2_RX_Done),.probe15(r3_RX_Done),
-  .probe16(o_RX_DV),.probe17(i_TX_DV),.probe18(r_RX_Done),.probe19(o_TX_sent));*.
+  .probe16(o_RX_DV),.probe17(i_TX_DV),.probe18(r_RX_Done),.probe19(o_TX_sent));
    */
   // CPOL: Clock Polarity
   // CPOL=0 means clock idles at 0, leading edge is rising edge.

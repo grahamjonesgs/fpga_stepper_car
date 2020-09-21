@@ -37,7 +37,7 @@ module SPI_Coms(
     reg     [2:0]       state;        // Seq part of the FSM
     reg     [2:0]       next_state;   // combo part of FSM
     reg     [2:0]       msg_rec_counter;   // counting received bytes    
-    reg     [2:0]       msg_send_counter;   // counting sent bytes
+    reg     [3:0]       msg_send_counter;   // counting sent bytes
     reg     [7:0]       crc_value;    // To hold the CRC value
 	integer i;                        // For for loops    
     reg     [7:0]       r_data [7:0];  // Data received temp
@@ -59,12 +59,9 @@ module SPI_Coms(
         .o_RX_Byte(SPI_RX_Byte),.o_TX_sent(SPI_TX_sent),.i_TX_DV(SPI_TX_DV), .i_TX_Byte(SPI_TX_Byte),
         .i_SPI_Clk(i_SPI_Clk),.i_SPI_MOSI(i_SPI_MOSI),.i_SPI_CS_n(i_SPI_CS),.o_SPI_MISO(o_SPI_MISO));  
         
- /* ila_0  myila(.clk(i_sysclk),.probe0(timeout_counter),.probe1(r_i_send_data_array),.probe2(msg_send_counter),.probe3(SPI_TX_sent),
-  .probe4(o_send_message_type), .probe5(SPI_TX_Byte),.probe6(state),.probe7(SPI_RX_Byte),
-  .probe8(i_SPI_Clk),.probe9(i_SPI_MOSI),.probe10(i_SPI_CS),.probe11(o_rec_data_DV),.probe12(i_reset),
-  .probe13(SPI_TX_DV),.probe14(SPI_RX_DV),.probe15(1'b0),
-  .probe16(1'b0),.probe17(1'b0),.probe18(1'b0),.probe19(1'b0));*/
-    
+/*  ila_0  myila(.clk(i_sysclk),.probe0(crc_value),.probe1(r_i_send_data_array),.probe2(crc),.probe3(SPI_TX_sent),
+  .probe4(o_send_message_type), .probe5(SPI_TX_Byte),.probe6(state),.probe7(SPI_RX_Byte));
+    */
     initial
         begin
             state=IDLE;
@@ -108,7 +105,7 @@ module SPI_Coms(
                     begin 
                         // Here we can use the second nibble of SPI_RX_DV to set message type
                         next_state<=SENDMSG;
-                        msg_send_counter=3'h0;
+                        msg_send_counter=4'h0;
                         o_send_data_request<=1'b1; // Tell caller to update send message
                         o_send_message_type<=SPI_RX_Byte[3:0];
                         r_i_send_data_array=i_send_data_array;
@@ -130,13 +127,14 @@ module SPI_Coms(
                     SPI_TX_DV<=1'b1;
                     o_send_message_type=4'h0;
                     o_send_data_request<=0'b1;
-                    next_state<=IDLE;   // If not all message receive then go back to idle state.
+                    next_state<=IDLE;   // If not all message sent then go back to idle state.
                 end
                 
                 if (msg_send_counter==0) // pick up new message before transmition starts
                 begin
                     r_i_send_data_array=i_send_data_array; // pick up any update from calling module based on message type
                     SPI_TX_Byte<=r_i_send_data_array[7:0];
+                    crc_value<=r_i_send_data_array[7:0];
                     SPI_TX_DV<=1'b1;
                 end
                 else
@@ -148,19 +146,48 @@ module SPI_Coms(
                   msg_send_counter=msg_send_counter+1; // Blocking update
                   SPI_TX_DV<=1'b1;
                   case (msg_send_counter)
-                  1: SPI_TX_Byte<=r_i_send_data_array [15:8];
-                  2: SPI_TX_Byte<=r_i_send_data_array [23:16];
-                  3: SPI_TX_Byte<=r_i_send_data_array [31:24];
-                  4: SPI_TX_Byte<=r_i_send_data_array [39:32];
-                  5: SPI_TX_Byte<=r_i_send_data_array [47:40];
-                  6: SPI_TX_Byte<=r_i_send_data_array [55:48];
-                  7: SPI_TX_Byte<=r_i_send_data_array [63:56];                 
-                  default:  // for the 8th byte and error cases
+                  1: 
+                  begin
+                    SPI_TX_Byte<=r_i_send_data_array [15:8];
+                    crc_value<=crc_value+r_i_send_data_array [15:8];
+                  end
+                  2: 
+                  begin
+                    SPI_TX_Byte<=r_i_send_data_array [23:16];
+                    crc_value<=crc_value+r_i_send_data_array [23:16];
+                  end
+                  3: 
+                  begin
+                    SPI_TX_Byte<=r_i_send_data_array [31:24];
+                    crc_value<=crc_value+r_i_send_data_array [31:24];
+                  end
+                  4: 
+                  begin
+                    SPI_TX_Byte<=r_i_send_data_array [39:32];
+                    crc_value<=crc_value+r_i_send_data_array [39:32];
+                  end
+                  5: 
+                  begin
+                    SPI_TX_Byte<=r_i_send_data_array [47:40];
+                    crc_value<=crc_value+r_i_send_data_array [47:40];
+                  end
+                  6: 
+                  begin
+                    SPI_TX_Byte<=r_i_send_data_array [55:48];
+                    crc_value<=crc_value+r_i_send_data_array [55:48];
+                  end
+                  7: 
+                  begin
+                    SPI_TX_Byte<=r_i_send_data_array [63:56];
+                    crc_value<=crc_value+r_i_send_data_array [63:56];
+                  end
+                  8: SPI_TX_Byte<=~crc_value+1;  // twos complement
+                  default:  // for the 9th byte and error cases
                   begin
                     SPI_TX_Byte<=8'h0;  
                     o_send_message_type=4'h0;
                     next_state<=IDLE;
-                    msg_send_counter=3'h0;
+                    msg_send_counter=4'h0;
                   end
                   endcase
                 end
@@ -196,16 +223,17 @@ module SPI_Coms(
                     crc_value=8'h0;
                     for (i=0;i<8;i=1+i)
 	                    crc_value=crc_value+r_data[i];
-		                if (crc_value==SPI_RX_Byte)
-                        begin
-                        next_state<=MSGOK;
-                        end // if CRC OK
-                        else
-                        begin
-                            // Send MSG OK pin value;
-                            next_state<=MSGKO;
-                            error_code <= CRC_ERROR;
-                        end // if CRC KO
+	                crc_value=~crc_value+1;
+		            if (crc_value==SPI_RX_Byte)
+                    begin
+                    next_state<=MSGOK;
+                    end // if CRC OK
+                    else
+                    begin
+                        // Send MSG OK pin value;
+                        next_state<=MSGKO;
+                        error_code <= CRC_ERROR;
+                    end // if CRC KO
                 end // if SPI_RX_DV
             end // case ENDMSG 
             MSGOK:

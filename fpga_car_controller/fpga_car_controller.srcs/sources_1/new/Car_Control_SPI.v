@@ -196,12 +196,9 @@ module Car_Control_SPI(
     LED_Control msg_led (.i_reset(i_reset), .i_sysclk(i_sysclk),.i_mode(8'h13),.o_LED_pin(o_msg_LED));
  `endif
     
-   /*ila_0  myila(.clk(i_sysclk),.probe0(r_step_counter),.probe1(r_max_steps),.probe2(r_speed_L),.probe3(r_speed_R),
-  .probe4(8'h0), .probe5(8'h0),.probe6(8'h0),.probe7(8'h0),
-  .probe8(r_left_right_count),.probe9(r_data_DV),.probe10(r_data_DV),.probe11(1'b0),.probe12(1'b0),
-  .probe13(1'b0),.probe14(1'b0),.probe15(1'b0),
-  .probe16(1'b0),.probe17(1'b0),.probe18(1'b0),.probe19(1'b0));
-   */
+  /* ila_0  myila(.clk(i_sysclk),.probe0(r_step_counter),.probe1(r_send_data_array),.probe2(r_speed_L),.probe3(r_speed_R),
+  .probe4(8'h0), .probe5(8'h0),.probe6(8'h0),.probe7(8'h0)); */
+   
 
 `ifdef BOARD_BASYS    
     //  Set up follow LEDs
@@ -295,6 +292,7 @@ module Car_Control_SPI(
                 begin
                     r_motor_status_message[1]=1'b1;
                     r_step_counter<=24'h0;
+                    r_motor_status_message[31:8]<=24'h0; // zero the stpes counter in motor message
                     if(w_rec_data_array[10]==0) // limit steps or not
                     begin
                         r_max_steps<=24'b0;
@@ -333,6 +331,8 @@ module Car_Control_SPI(
                 MSG_TYPE_MOTOR_IND:
                 begin
                     w_counting<=1'b0;
+                    r_step_counter<=24'h0;
+                    r_motor_status_message[31:8]<=24'h0; // zero the stpes counter in motor message
                     r_motor_status_message[1]=1'b0;
                        
                     // Output the two speeds to the 7 seg
@@ -375,7 +375,7 @@ module Car_Control_SPI(
                         r_speed_Right_Back<=8'h0;
                         r_data_DV<=1'b1;
                         w_counting<=1'b0;
-                    end // if (r_step_counter>r_max_steps)
+                    end // if (r_step_counter>=r_max_steps)
                     else
                     begin
                         r_data_DV<=1'b0;
