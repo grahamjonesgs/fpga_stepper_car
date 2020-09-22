@@ -7,7 +7,7 @@ Code to control a stepper motor driven robot car using an FPGA. Built to use an 
 Tested with Vivaldo 2020.1. To build, open with Vivado, activate the appropriate contraint file by right clicking and selecting "Make Actve...". Update file "defines.v" to define the Macro for the chosen board.
 
 ## Functionality
-Communicates through SPI bus to accept commands, and give status, based on 8 byte command, with start message type byte and one check byte. SPI message definition given in top module, with example of calling given in the *spi_test.c* test file.
+Communicates through SPI bus to accept commands, and give status, based on 8 byte command/status message, with start message type byte and one checksum byte. SPI message definition given in top module, with example of calling given in the *spi_test.c* test file.
 
 Allows separate control for four motors with individual direction and step control, plus outputs for three signal LEDs, with PWM based pulsing. Variable speed control for either constant motion or for a fixed number of steps. 
 

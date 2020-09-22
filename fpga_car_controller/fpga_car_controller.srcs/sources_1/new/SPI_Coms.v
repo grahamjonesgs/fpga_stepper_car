@@ -26,10 +26,10 @@ module SPI_Coms(
     );
 
     parameter IDLE  = 3'b001,RECMSG = 3'b010,MSGOK = 3'b100, MSGKO = 3'b101, ENDMSG = 3'b110, SENDMSG=3'b111;
-    parameter CRC_ERROR = 3'b011, TIMEOUT = 3'b010;
+    parameter CHECKSUM_ERROR = 3'b011, TIMEOUT = 3'b010;
     parameter RECEIVE_MAX_TIME = 99_999;  // 1 ms timeout between first and last byte of received message
     parameter SEND_MAX_TIME = 999_999; // 10 ms to complete receive of status after request
-    parameter CRC_ERROR_CODE = 8'h02, TIMEOUT_CODE=8'h03, ACK_OK=8'h01; // ACK and Error return codes
+    parameter CHECKSUM_ERROR_CODE = 8'h02, TIMEOUT_CODE=8'h03, ACK_OK=8'h01; // ACK and Error return codes
     parameter START_MSG_CODE = 4'h1, SEND_MESSAGE_CODE = 4'h2; // Message start and status request codes. First nibble (most sig) type, second can be subtype.
     
     
@@ -38,7 +38,7 @@ module SPI_Coms(
     reg     [2:0]       next_state;   // combo part of FSM
     reg     [2:0]       msg_rec_counter;   // counting received bytes    
     reg     [3:0]       msg_send_counter;   // counting sent bytes
-    reg     [7:0]       crc_value;    // To hold the CRC value
+    reg     [7:0]       checksum_value;    // To hold the CRC value
 	integer i;                        // For for loops    
     reg     [7:0]       r_data [7:0];  // Data received temp
     reg     [31:0]      timeout_counter;  // To check for message timeout
@@ -59,7 +59,7 @@ module SPI_Coms(
         .o_RX_Byte(SPI_RX_Byte),.o_TX_sent(SPI_TX_sent),.i_TX_DV(SPI_TX_DV), .i_TX_Byte(SPI_TX_Byte),
         .i_SPI_Clk(i_SPI_Clk),.i_SPI_MOSI(i_SPI_MOSI),.i_SPI_CS_n(i_SPI_CS),.o_SPI_MISO(o_SPI_MISO));  
         
-/*  ila_0  myila(.clk(i_sysclk),.probe0(crc_value),.probe1(r_i_send_data_array),.probe2(crc),.probe3(SPI_TX_sent),
+/*  ila_0  myila(.clk(i_sysclk),.probe0(checksum_value),.probe1(r_i_send_data_array),.probe2(crc),.probe3(SPI_TX_sent),
   .probe4(o_send_message_type), .probe5(SPI_TX_Byte),.probe6(state),.probe7(SPI_RX_Byte));
     */
     initial
@@ -134,7 +134,7 @@ module SPI_Coms(
                 begin
                     r_i_send_data_array=i_send_data_array; // pick up any update from calling module based on message type
                     SPI_TX_Byte<=r_i_send_data_array[7:0];
-                    crc_value<=r_i_send_data_array[7:0];
+                    checksum_value<=r_i_send_data_array[7:0];
                     SPI_TX_DV<=1'b1;
                 end
                 else
@@ -149,39 +149,39 @@ module SPI_Coms(
                   1: 
                   begin
                     SPI_TX_Byte<=r_i_send_data_array [15:8];
-                    crc_value<=crc_value+r_i_send_data_array [15:8];
+                    checksum_value<=checksum_value+r_i_send_data_array [15:8];
                   end
                   2: 
                   begin
                     SPI_TX_Byte<=r_i_send_data_array [23:16];
-                    crc_value<=crc_value+r_i_send_data_array [23:16];
+                    checksum_value<=checksum_value+r_i_send_data_array [23:16];
                   end
                   3: 
                   begin
                     SPI_TX_Byte<=r_i_send_data_array [31:24];
-                    crc_value<=crc_value+r_i_send_data_array [31:24];
+                    checksum_value<=checksum_value+r_i_send_data_array [31:24];
                   end
                   4: 
                   begin
                     SPI_TX_Byte<=r_i_send_data_array [39:32];
-                    crc_value<=crc_value+r_i_send_data_array [39:32];
+                    checksum_value<=checksum_value+r_i_send_data_array [39:32];
                   end
                   5: 
                   begin
                     SPI_TX_Byte<=r_i_send_data_array [47:40];
-                    crc_value<=crc_value+r_i_send_data_array [47:40];
+                    checksum_value<=checksum_value+r_i_send_data_array [47:40];
                   end
                   6: 
                   begin
                     SPI_TX_Byte<=r_i_send_data_array [55:48];
-                    crc_value<=crc_value+r_i_send_data_array [55:48];
+                    checksum_value<=checksum_value+r_i_send_data_array [55:48];
                   end
                   7: 
                   begin
                     SPI_TX_Byte<=r_i_send_data_array [63:56];
-                    crc_value<=crc_value+r_i_send_data_array [63:56];
+                    checksum_value<=checksum_value+r_i_send_data_array [63:56];
                   end
-                  8: SPI_TX_Byte<=~crc_value+1;  // twos complement
+                  8: SPI_TX_Byte<=~checksum_value+1;  // twos complement
                   default:  // for the 9th byte and error cases
                   begin
                     SPI_TX_Byte<=8'h0;  
@@ -220,11 +220,11 @@ module SPI_Coms(
                 end  
                 if(SPI_RX_DV)
                 begin 
-                    crc_value=8'h0;
+                    checksum_value=8'h0;
                     for (i=0;i<8;i=1+i)
-	                    crc_value=crc_value+r_data[i];
-	                crc_value=~crc_value+1;
-		            if (crc_value==SPI_RX_Byte)
+	                    checksum_value=checksum_value+r_data[i];
+	                checksum_value=~checksum_value+1;  // Take twos complment
+		            if (checksum_value==SPI_RX_Byte)
                     begin
                     next_state<=MSGOK;
                     end // if CRC OK
@@ -232,7 +232,7 @@ module SPI_Coms(
                     begin
                         // Send MSG OK pin value;
                         next_state<=MSGKO;
-                        error_code <= CRC_ERROR;
+                        error_code <= CHECKSUM_ERROR;
                     end // if CRC KO
                 end // if SPI_RX_DV
             end // case ENDMSG 
@@ -256,8 +256,8 @@ module SPI_Coms(
             MSGKO:
             begin
                 SPI_TX_DV<=1'b1;
-                if (error_code==CRC_ERROR)
-                    SPI_TX_Byte<=CRC_ERROR_CODE;   // Nack response
+                if (error_code==CHECKSUM_ERROR)
+                    SPI_TX_Byte<=CHECKSUM_ERROR_CODE;   // Nack response
                 if (error_code==TIMEOUT)
                     SPI_TX_Byte<=TIMEOUT_CODE;   // Nack response
                 next_state<=IDLE;
