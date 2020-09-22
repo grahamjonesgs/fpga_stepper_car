@@ -8,7 +8,7 @@
 #define MESSAGE_TRIES 10
 
 #define START_MSG_CODE 0x10
-#define CRC_ERROR_CODE 0x02
+#define CHECKSUM_ERROR_CODE 0x02
 #define TIMEOUT_CODE 0x03
 #define ACK_OK 0x01
 
@@ -87,7 +87,7 @@ int message_send(char* msg_buf)
         char full_msg[255];
         int counter;
         char ret_code;
-        char crc;
+        char checksum;
 
         full_msg[0]=START_MSG_CODE; // Start msg char
         for (int i=0; i<8; i++) {
@@ -99,8 +99,8 @@ int message_send(char* msg_buf)
         {
                 counter=counter+full_msg[i];
         }
-        crc= ~(counter%256)+1;
-        full_msg[9]=crc; // set CRC value
+        checksum= ~(counter%256)+1;
+        full_msg[9]=checksum; // set CHECKSUM value
 
         for (int i=0; i<MESSAGE_TRIES; i++)
         {
@@ -111,8 +111,8 @@ int message_send(char* msg_buf)
                         printf("Message sent OK\n");
                         return(0);
                         break;
-                case CRC_ERROR_CODE:
-                        printf("Message CRC error\n");
+                case CHECKSUM_ERROR_CODE:
+                        printf("Message Checksum error\n");
                         break;
                 case TIMEOUT_CODE:
                         printf("Message timeout error\n");
@@ -139,7 +139,7 @@ int enable_motor(int flag) {
 int read_version_message(void) {
         char r_msg[255];
         char msg;
-        char crc;
+        char checksum;
 
         msg=0x21; // Request message flag
         spi_write(pi, spi_handle, &msg, 1); // Request
@@ -151,9 +151,9 @@ int read_version_message(void) {
         {
                 counter=counter+r_msg[i];
         }
-        crc = ~(counter%256)+1;
-		if(r_msg[8]!=crc) {
-        	printf("Error!!! Check byte received %02X, calculated %02X\n",r_msg[8], crc);
+        checksum = ~(counter%256)+1;
+		if(r_msg[8]!=checksum) {
+        	printf("Error!!! Check byte received %02X, calculated %02X\n",r_msg[8], checksum);
         }
         else {
        	    printf("Version message %02X %02X %02X %02X %02X %02X %02X %02X\n",r_msg[7],r_msg[6],r_msg[5],r_msg[4],r_msg[3],r_msg[2],r_msg[1],r_msg[0]);
@@ -167,7 +167,7 @@ int read_motor_message(void) {
         char r_msg[255];
         char msg;
         int counter;
-        char crc;
+        char checksum;
 
         msg=0x22; // Request message flag
         spi_write(pi, spi_handle, &msg, 1); // Request
@@ -178,9 +178,9 @@ int read_motor_message(void) {
         {
                 counter=counter+r_msg[i];
         }
-        crc = ~(counter%256)+1;
-		if(r_msg[8]!=crc) {
-        printf("Error!!! Check byte received %02X, calculated %02X\n",r_msg[8], crc);
+        checksum = ~(counter%256)+1;
+		if(r_msg[8]!=checksum) {
+        printf("Error!!! Check byte received %02X, calculated %02X\n",r_msg[8], checksum);
         }
         else {
         printf("Motor message %02X %02X %02X %02X %02X %02X %02X %02X\n",r_msg[7],r_msg[6],r_msg[5],r_msg[4],r_msg[3],r_msg[2],r_msg[1],r_msg[0]);
