@@ -65,6 +65,13 @@
    0x1X Pulse Medium
    0x2X Pulse Fast
    
+   Motor Status Message
+   Byte 0 Status
+     Bit 0 enable
+     Bit 1 skid mode, 1 for skid mode 0 for independent
+     Bit 2 Limit, 1 for limit mode
+     Bit 3 Moving
+   Byte 1-3 remaining turns (bits 8-31)
    
    
  */ 
@@ -108,7 +115,7 @@ int message_send(char* msg_buf)
                 spi_read(pi, spi_handle, &ret_code,1);
                 switch (ret_code) {
                 case ACK_OK:
-                        printf("Message sent OK\n");
+                        //printf("Message sent OK\n");
                         return(0);
                         break;
                 case CHECKSUM_ERROR_CODE:
@@ -168,6 +175,7 @@ int read_motor_message(void) {
         char msg;
         int counter;
         char checksum;
+        int steps;
 
         msg=0x22; // Request message flag
         spi_write(pi, spi_handle, &msg, 1); // Request
@@ -183,7 +191,14 @@ int read_motor_message(void) {
         printf("Error!!! Check byte received %02X, calculated %02X\n",r_msg[8], checksum);
         }
         else {
-        printf("Motor message %02X %02X %02X %02X %02X %02X %02X %02X\n",r_msg[7],r_msg[6],r_msg[5],r_msg[4],r_msg[3],r_msg[2],r_msg[1],r_msg[0]);
+        //printf("Motor message %02X %02X %02X %02X %02X %02X %02X %02X\n",r_msg[7],r_msg[6],r_msg[5],r_msg[4],r_msg[3],r_msg[2],r_msg[1],r_msg[0]);
+        steps=256*256*r_msg[3]+256*r_msg[2]+r_msg[1];
+        printf("Motor message- %s, %s, %s, %s, %i steps\n", \
+        		r_msg[0]&1?"Disabled":"Enabled", \
+        		r_msg[0]&2?"Skid mode":"Independent mode", \
+        		r_msg[0]&4?"Counting":"Not counting", \
+        		r_msg[0]&8?"Moving":"Not moving", \
+        		steps);
         }
         
 
@@ -287,9 +302,9 @@ int main (int argc, char **argv)
         
         
          do {
-                system ("/bin/stty raw");
+                system ("/bin/stty raw -echo");
                 c = getchar();
-                system ("/bin/stty cooked");
+                system ("/bin/stty cooked echo");
                 switch (c) {
                 case 'f':
                         speed++;
@@ -391,7 +406,7 @@ int main (int argc, char **argv)
     
                 
         } while (c!='q');
-        system ("/bin/stty cooked");
+        system ("/bin/stty cooked echo");
         set_motor (0,0,0,0);
         gpio_write(pi,POWER_PIN,1);  // power off
         enable_motor(1);  // diable motors
