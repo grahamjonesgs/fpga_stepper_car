@@ -389,15 +389,15 @@ int main (int argc, char **argv)
                         send_led(0x01,0x01,0x01);;
                         break;
             	case '5':
-            			printf("5 rotations current speed");
+            			printf("5 rotations current speed\n");
             			set_motor_limit (speed, speed, direction, direction, 200*16*5, 0);
             			break;
             	case '6':
-            			printf("100 fast rotations");
+            			printf("100 fast rotations\n");
             			set_motor_limit (255, 255, direction, direction, 200*16*100, 0);
             			break;
             	case '7':
-            			printf("1000 fast rotations");
+            			printf("1000 fast rotations\n");
             			set_motor_limit (255, 255, direction, direction, 200*16*1000, 0);
             			break;
 				
