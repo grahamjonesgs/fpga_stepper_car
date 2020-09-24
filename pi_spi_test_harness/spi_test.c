@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <time.h>
+#include <locale.h>
 #include <pthread.h>
 #include "pigpiod_if2.h"
 
@@ -87,7 +88,6 @@ int M2=1;  // init to 1/16 steps
 int enable=1; 
 int direction=0;
 int speed = 10;
-
 
 int message_send(char* msg_buf)
 {
@@ -193,7 +193,8 @@ int read_motor_message(void) {
         else {
         //printf("Motor message %02X %02X %02X %02X %02X %02X %02X %02X\n",r_msg[7],r_msg[6],r_msg[5],r_msg[4],r_msg[3],r_msg[2],r_msg[1],r_msg[0]);
         steps=256*256*r_msg[3]+256*r_msg[2]+r_msg[1];
-        printf("Motor message- %s, %s, %s, %s, %i steps\n", \
+        setlocale(LC_NUMERIC, "");
+        printf("Motor message- %s, %s, %s, %s, %'i steps\n", \
         		r_msg[0]&1?"Disabled":"Enabled", \
         		r_msg[0]&2?"Skid mode":"Independent mode", \
         		r_msg[0]&4?"Counting":"Not counting", \
@@ -411,29 +412,6 @@ int main (int argc, char **argv)
         gpio_write(pi,POWER_PIN,1);  // power off
         enable_motor(1);  // diable motors
 
-
-        //set_motor (0x0,0x0,0,1);
-        //set_motor_limit (10,10,1,1, 10*200, 0);
-        //set_motor (10,10,1,1);
-        
-        //sleep(5);
-        //set_motor (0x0,0x0,0,1);
-        
-        //enable_motor(1);
-
-
- 
-
-        //send_led(0x03,0x13,0x23);
-        
-
         spi_close(pi,spi_handle);
-
-
-
-
-
-
-
 
 }
