@@ -59,6 +59,7 @@
 //     Bit 0 enable
 //     Bit 1 skid mode, 1 for skid mode 0 for independent
 //     Bit 2 Limit, 1 for limit mode
+//     Bit 3 Moving
 //   Byte 1-3 remaining turns (bits 8-31)
 //
 //////////////////////////////////////////////////////////////////////////////////
@@ -316,6 +317,15 @@ module Car_Control_SPI(
                     o_displayed_number[27:24]<=w_rec_data_array[23:20]; // Left 2 23:20
                     o_displayed_number[31:28]<=4'b0;
                     // Set speed and direction from data
+                    if(w_rec_data_array[23:16]||w_rec_data_array[31:24])
+                    begin
+                        r_motor_status_message[3]<=1'b1;
+                    end
+                    else
+                    begin
+                        r_motor_status_message[3]<=1'b0;
+                    end
+                    
                     r_speed_Left_Front<=w_rec_data_array[23:16];
                     r_speed_Right_Front<=w_rec_data_array[31:24];
                     r_dir_Left_Front<=w_rec_data_array[8];
@@ -352,7 +362,15 @@ module Car_Control_SPI(
                     r_dir_Left_Front<=w_rec_data_array[8];
                     r_dir_Right_Front<=w_rec_data_array[9];
                     r_dir_Left_Back<=w_rec_data_array[10];
-                    r_dir_Right_Back<=w_rec_data_array[11];
+                    r_dir_Right_Back<=w_rec_data_array[11];  
+                    if(w_rec_data_array[23:16]||w_rec_data_array[31:24]||w_rec_data_array[39:32]||w_rec_data_array[47:40])
+                    begin
+                        r_motor_status_message[3]<=1'b1;
+                    end
+                    else
+                    begin
+                        r_motor_status_message[3]<=1'b0;
+                    end
                     // Pulse to motor controller
                     r_data_DV<=1'b1; 
                 end // case MSG_TYPE_MOTOR_IND
@@ -364,7 +382,7 @@ module Car_Control_SPI(
                 if (w_counting_pin&&w_counting)
                 begin
                     r_step_counter<=r_step_counter+1;
-                    r_motor_status_message[31:8]<=r_step_counter[23:0];
+                    r_motor_status_message[31:8]<=r_max_steps[23:0]-r_step_counter[23:0];
                     r_motor_status_message[55:32]<=24'h01_02_03;
                     if (r_step_counter>=r_max_steps)
                     begin
@@ -375,6 +393,7 @@ module Car_Control_SPI(
                         r_speed_Right_Back<=8'h0;
                         r_data_DV<=1'b1;
                         w_counting<=1'b0;
+                        r_motor_status_message[3]<=1'b0;
                     end // if (r_step_counter>=r_max_steps)
                     else
                     begin
