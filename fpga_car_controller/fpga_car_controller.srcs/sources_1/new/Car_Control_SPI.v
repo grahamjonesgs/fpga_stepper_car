@@ -90,7 +90,6 @@ module Car_Control_SPI(
     // LED's for outpuf
     output              o_Enable_LED,
   
-
 `ifdef BOARD_BASYS      
     // Follow LED's all on BASYS board for debug
     output              o_Left_Front_Dir_LED,
@@ -104,12 +103,10 @@ module Car_Control_SPI(
     output              o_Red_led_LED,
     output              o_Blue_led_LED,
     output              o_Green_led_LED,
-    
-   
+      
     output      [3:0]   o_Anode_Activate, // anode signals of the 7-segment LED display
     output      [7:0]   o_LED_cathode,// cathode patterns of the 7-segment LED display
- `elsif BOARD_CMOD
-    
+ `elsif BOARD_CMOD   
     output      reg     o_SPI_Gnd,
     output      reg     o_Aux_Gnd,
     output              o_msg_LED,
@@ -132,8 +129,7 @@ module Car_Control_SPI(
     reg     [7:0]       r_speed_Left_Back; 
     reg                 r_dir_Right_Back;  
     reg     [7:0]       r_speed_Right_Back;
-
-    
+   
     wire                w_step_count_Left_Front;
     wire                w_step_count_Right_Front;
     wire                w_step_count_Left_Back;
@@ -164,10 +160,8 @@ module Car_Control_SPI(
     // Motor status message
     reg     [63:0]      r_motor_status_message;
     
-    parameter VERSION_STRING = 32'h20_10_00_06;  // V0.06
-    
+    parameter VERSION_STRING = 32'h20_10_00_06;  // V0.06   
     parameter MSG_TYPE_MOTOR_SKID=8'h01, MSG_TYPE_ENABLE=8'h02, MSG_TYPE_LED=8'h03, MSG_TYPE_STATUS=8'h04, MSG_TYPE_MOTOR_IND=8'h05;
-    
     parameter SEND_NOTHING=4'h0, SEND_VERSION=4'h1, SEND_MOTOR_STATUS=4'h2;  // Message subtype for status message. Send_nothing means no request.
     
     SM_Output SM_Output_LF(.i_sysclk(i_sysclk),.i_reset(i_reset),.i_data_DV(r_data_DV),
@@ -200,7 +194,6 @@ module Car_Control_SPI(
   /* ila_0  myila(.clk(i_sysclk),.probe0(r_step_counter),.probe1(r_send_data_array),.probe2(r_speed_L),.probe3(r_speed_R),
   .probe4(8'h0), .probe5(8'h0),.probe6(8'h0),.probe7(8'h0)); */
    
-
 `ifdef BOARD_BASYS    
     //  Set up follow LEDs
     assign o_Left_Front_Dir_LED=o_Left_Front_Dir;
@@ -354,6 +347,7 @@ module Car_Control_SPI(
                     o_displayed_number[23:20]<=4'b0;
                     o_displayed_number[27:24]<=w_rec_data_array[23:20]; // Left 2 23:20
                     o_displayed_number[31:28]<=4'b0;
+   
                     // Set speed and direction from data
                     r_speed_Left_Front<=w_rec_data_array[23:16];
                     r_speed_Right_Front<=w_rec_data_array[31:24];
