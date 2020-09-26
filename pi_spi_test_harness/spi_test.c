@@ -74,6 +74,11 @@
      Bit 3 Moving
    Byte 1-3 remaining turns (bits 8-31)
    
+   SPI Link
+   MOSI Pi Pin 19 (Brown) Basys JC1
+   MISO Pi Pin 21 (Red) Basys JC4
+   SCKL Pi Pin 23 (Orange) Basys JC2
+   CS  Pi Pin 24 (yellow) Basys JC3
    
  */ 
 
@@ -108,6 +113,13 @@ int message_send(char* msg_buf)
         }
         checksum= ~(counter%256)+1;
         full_msg[9]=checksum; // set CHECKSUM value
+        
+        //TEMP XXXXX
+        printf("Message is ");
+        for (int i=0; i<10; i++) {
+                printf("%02X ",full_msg[i]);
+        }
+        printf("\n");
 
         for (int i=0; i<MESSAGE_TRIES; i++)
         {
@@ -140,6 +152,15 @@ int enable_motor(int flag) {
 
         msg[0]=MSG_TYPE_ENABLE;
         msg[1]=flag;
+        msg[2]=0;
+        msg[3]=0;
+        msg[4]=0;
+        msg[5]=0;
+        msg[6]=0;
+        msg[7]=0;
+        msg[8]=0;
+       
+        
         return(message_send(msg));
 }
 
