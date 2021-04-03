@@ -19,11 +19,11 @@ Example Raspberry Pi based test harness, which could be used to base any car con
 
 ## Wiring
 ### SPI Bus to Pi
-``              CMOD A7.       PI Zero``
+``..............CMOD A7........PI Zero``
 
-``o_SPI_Gnd     U3 Pin 44      GPIO -- Pin 25`` 
+``o_SPI_Gnd.....U3 Pin 44......GPIO -- Pin 25`` 
 
-``o_SPI_MISO    U7 Pin 45      GPIO 09 Pin 21``
+``o_SPI_MISO....U7 Pin 45......GPIO 09 Pin 21``
 
 ``i_SPI_CS      W7 Pin 46      GPIO 08 Pin 24``
 
