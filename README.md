@@ -25,11 +25,11 @@ Example Raspberry Pi based test harness, which could be used to base any car con
 
 ``o_SPI_MISO....U7 Pin 45......GPIO 09 Pin 21``
 
-``i_SPI_CS      W7 Pin 46      GPIO 08 Pin 24``
+``i_SPI_CS......W7 Pin 46......GPIO 08 Pin 24``
 
-``i_SPI_Clk     U8 Pin 47      GPIO 11 Pin 23``
+``i_SPI_Clk.....U8 Pin 47......GPIO 11 Pin 23``
 
-``i_SPI_MOSI    V8 Pin 48      GPIO 10 Pin 19``
+``i_SPI_MOSI....V8 Pin 48......GPIO 10 Pin 19``
 
 
 
