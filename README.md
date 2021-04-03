@@ -17,7 +17,21 @@ Tested to control stepper motors though TLP281 optical isolators driving CNC Shi
 ## Test code
 Example Raspberry Pi based test harness, which could be used to base any car control system.
 
+## Wiring
+### SPI Bus to Pi
+              CMOD A7        PI Zero
+o_SPI_Gnd     U3 Pin 44      GPIO -- Pin 25   
+o_SPI_MISO    U7 Pin 45      GPIO 09 Pin 21  
+i_SPI_CS      W7 Pin 46      GPIO 08 Pin 24  
+i_SPI_Clk     U8 Pin 47      GPIO 11 Pin 23  
+i_SPI_MOSI    V8 Pin 48      GPIO 10 Pin 19 
+
+
+
+
 ### Acknowledgements
 SPI code based on SPI-slave code from [Nandland](https://github.com/nandland/spi-slave).
 
 Raspberry Pi test harness code uses [pigpio](http://abyz.me.uk/rpi/pigpio/).
+
+
