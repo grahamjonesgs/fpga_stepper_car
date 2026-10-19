@@ -11,6 +11,12 @@ Communicates through SPI bus to accept commands, and give status, based on 8 byt
 
 Allows separate control for four motors with individual direction and step control, plus outputs for three signal LEDs, with PWM based pulsing. Variable speed control for either constant motion or for a fixed number of steps. 
 
+### Watchdog
+If no message or status request arrives from the Pi for 500 ms the FPGA stops all motors and sets bit 4 of the motor status byte. The next motor message clears the flag. The controlling program must therefore talk to the FPGA at least every 500 ms; *spi_test.c* does this with a heartbeat thread sending a null status request every 100 ms. The timeout is `WATCHDOG_TIMEOUT` in *Car_Control_SPI.v*, set to 0 to disable.
+
+## Simulation
+Testbenches for Icarus Verilog are in *sim*. Install with `apt install iverilog`, then run `make` in the *sim* directory. *tb_SM_Output* tests the step generator, *tb_Car_Control_SPI* drives the whole design over SPI as the Pi does and checks counted moves, direction pins and the watchdog.
+
 ## Hardware tested
 Tested to control stepper motors though TLP281 optical isolators driving CNC Shield V3 with DRV8825, driving NEMA 17 motors.
 

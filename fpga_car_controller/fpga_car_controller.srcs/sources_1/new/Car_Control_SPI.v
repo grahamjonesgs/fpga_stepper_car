@@ -18,8 +18,8 @@
 //   Byte 1 - directions (bytes 8-15)
 //        bit 0 - left dir
 //        bit 1 - right dir
-//        bit 4 - mode, 0 for ever, 1 count
-//        bit 5 - 0 count left, 1 count right
+//        bit 2 - mode, 0 for ever, 1 count
+//        bit 3 - 0 count left, 1 count right
 //   Byte 2 - Left speed (bytes 16-23)
 //   Btye 3 - Right speed (bytes 24-31)
 //   Byte 4/5/6 - Max number of step  (bytes 32-55)
@@ -60,6 +60,7 @@
 //     Bit 1 skid mode, 1 for skid mode 0 for independent
 //     Bit 2 Limit, 1 for limit mode
 //     Bit 3 Moving
+//     Bit 4 Stopped by watchdog, no message or status request for WATCHDOG_TIMEOUT
 //   Byte 1-3 remaining turns (bits 8-31)
 //
 //////////////////////////////////////////////////////////////////////////////////
@@ -149,6 +150,9 @@ module Car_Control_SPI(
     wire                w_counting_pin;
     reg                 w_counting; // if we are coutning steps 
     
+    // Watchdog, stops the motors if the Pi stops talking to us
+    reg     [31:0]      r_watchdog_counter;
+    
     // For controlling the output LED's
     reg     [7:0]       r_Red_led_status;
     reg     [7:0]       r_Blue_led_status;
@@ -160,9 +164,15 @@ module Car_Control_SPI(
     // Motor status message
     reg     [63:0]      r_motor_status_message;
     
-    parameter VERSION_STRING = 32'h20_10_00_06;  // V0.06   
+    parameter VERSION_STRING = 32'h20_10_00_07;  // V0.07   
     parameter MSG_TYPE_MOTOR_SKID=8'h01, MSG_TYPE_ENABLE=8'h02, MSG_TYPE_LED=8'h03, MSG_TYPE_STATUS=8'h04, MSG_TYPE_MOTOR_IND=8'h05;
     parameter SEND_NOTHING=4'h0, SEND_VERSION=4'h1, SEND_MOTOR_STATUS=4'h2;  // Message subtype for status message. Send_nothing means no request.
+`ifdef BOARD_BASYS
+    parameter WATCHDOG_TIMEOUT = 50_000_000;  // 500 ms at 100 Mhz, 0 to disable
+`endif
+`ifdef BOARD_CMOD
+    parameter WATCHDOG_TIMEOUT = 6_000_000;  // 500 ms at 12 Mhz, 0 to disable
+`endif
     
     SM_Output SM_Output_LF(.i_sysclk(i_sysclk),.i_reset(i_reset),.i_data_DV(r_data_DV),
     .i_dir(r_dir_Left_Front),.i_speed(r_speed_Left_Front),.o_dir_pin(o_Left_Front_Dir),.o_step_pin(o_Left_Front_Step),.o_step_counter(w_step_count_Left_Front));
@@ -174,7 +184,7 @@ module Car_Control_SPI(
     .i_dir(r_dir_Left_Back),.i_speed(r_speed_Left_Back),.o_dir_pin(o_Left_Back_Dir),.o_step_pin(o_Left_Back_Step),.o_step_counter(w_step_count_Left_Back));
     
     SM_Output SM_Output_RB(.i_sysclk(i_sysclk),.i_reset(i_reset),.i_data_DV(r_data_DV),
-    .i_dir(r_dir_Right_Back),.i_speed(r_speed_Right_Back),.o_dir_pin(o_Right_Front_Back),.o_step_pin(o_Right_Back_Step),.o_step_counter(w_step_count_Right_Back));
+    .i_dir(r_dir_Right_Back),.i_speed(r_speed_Right_Back),.o_dir_pin(o_Right_Back_Dir),.o_step_pin(o_Right_Back_Step),.o_step_counter(w_step_count_Right_Back));
     
     SPI_Coms SPI_Coms1(.i_sysclk(i_sysclk),.i_reset(i_reset),.i_SPI_Clk(i_SPI_Clk),
    .i_SPI_MOSI(i_SPI_MOSI),.i_SPI_CS(i_SPI_CS),.o_SPI_MISO(o_SPI_MISO),.o_rec_data_DV(w_rec_data_DV),
@@ -226,6 +236,8 @@ module Car_Control_SPI(
         r_Blue_led_status=8'h0;
         r_Green_led_status=8'h0;
         r_step_counter=24'h0;
+        w_counting=1'b0;
+        r_watchdog_counter=32'h0;
         `ifdef BOARD_CMOD
         o_SPI_Gnd=1'b0;    // Ground SPI pin
         o_Aux_Gnd=1'b0;    // Gound aux outputs
@@ -249,9 +261,17 @@ module Car_Control_SPI(
             r_Blue_led_status=8'h0;
             r_Green_led_status=8'h0;
             o_Enable=1'b1;  // High is off
+            w_counting<=1'b0;
+            r_data_DV<=1'b0;
+            r_watchdog_counter<=32'h0;
         end //if reset
         else // if reset
         begin
+            // Any message or status request from the Pi kicks the watchdog
+            if (w_rec_data_DV || w_send_data_request)
+                r_watchdog_counter<=32'h0;
+            else if (r_watchdog_counter<WATCHDOG_TIMEOUT)
+                r_watchdog_counter<=r_watchdog_counter+1;
             if(w_send_data_request)
             begin
                 case(w_send_message_type)
@@ -285,6 +305,7 @@ module Car_Control_SPI(
                MSG_TYPE_MOTOR_SKID:
                 begin
                     r_motor_status_message[1]=1'b1;
+                    r_motor_status_message[4]<=1'b0;
                     r_step_counter<=24'h0;
                     r_motor_status_message[31:8]<=24'h0; // zero the stpes counter in motor message
                     if(w_rec_data_array[10]==0) // limit steps or not
@@ -337,6 +358,7 @@ module Car_Control_SPI(
                     r_step_counter<=24'h0;
                     r_motor_status_message[31:8]<=24'h0; // zero the stpes counter in motor message
                     r_motor_status_message[1]=1'b0;
+                    r_motor_status_message[4]<=1'b0;
                        
                     // Output the two speeds to the 7 seg
                     o_displayed_number[3:0]<=w_rec_data_array[29:24]; // Right 1 29:24
@@ -373,12 +395,26 @@ module Car_Control_SPI(
             end
             else // if (w_rec_data_DV==1)
             begin
-                if (w_counting_pin&&w_counting)
+                if (WATCHDOG_TIMEOUT!=0 && r_watchdog_counter==WATCHDOG_TIMEOUT-1)
                 begin
+                    // No contact from the Pi, stop motors. Counter then sits at the
+                    // timeout so this only fires once until the next message.
+                    r_speed_Left_Front<=8'h0;
+                    r_speed_Right_Front<=8'h0;
+                    r_speed_Left_Back<=8'h0;
+                    r_speed_Right_Back<=8'h0;
+                    r_data_DV<=1'b1;
+                    w_counting<=1'b0;
+                    r_motor_status_message[3]<=1'b0;
+                    r_motor_status_message[4]<=1'b1;
+                end // if watchdog timeout
+                else if (w_counting_pin&&w_counting)
+                begin
+                    // r_step_counter holds steps before this one, so this is step r_step_counter+1
                     r_step_counter<=r_step_counter+1;
-                    r_motor_status_message[31:8]<=r_max_steps[23:0]-r_step_counter[23:0];
+                    r_motor_status_message[31:8]<=r_max_steps[23:0]-(r_step_counter[23:0]+1);
                     r_motor_status_message[55:32]<=24'h01_02_03;
-                    if (r_step_counter>=r_max_steps)
+                    if (r_step_counter+1>=r_max_steps)
                     begin
                         // stop motors!!
                         r_speed_Left_Front<=8'h0;
@@ -388,7 +424,7 @@ module Car_Control_SPI(
                         r_data_DV<=1'b1;
                         w_counting<=1'b0;
                         r_motor_status_message[3]<=1'b0;
-                    end // if (r_step_counter>=r_max_steps)
+                    end // if (r_step_counter+1>=r_max_steps)
                     else
                     begin
                         r_data_DV<=1'b0;

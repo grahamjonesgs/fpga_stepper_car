@@ -16,7 +16,7 @@
 #define MSG_TYPE_MOTOR 0x01
 #define MSG_TYPE_ENABLE 0x02
 #define MSG_TYPE_LED 0x03
-#define MSG_TYPE_STATUS 0x04;
+#define MSG_TYPE_STATUS 0x04
 
 #define LEFT_BACKWARDS 0x01
 #define RIGHT_BACKWARDS 0x02
@@ -24,6 +24,8 @@
 #define COUNT_RIGHT 0x08
 
 #define POWER_PIN 24
+
+#define HEARTBEAT_US 100000  // FPGA watchdog stops the motors after 500 ms without a message
 
 #define M0_PIN 14
 #define M1_PIN 15
@@ -72,6 +74,7 @@
      Bit 1 skid mode, 1 for skid mode 0 for independent
      Bit 2 Limit, 1 for limit mode
      Bit 3 Moving
+     Bit 4 Stopped by watchdog
    Byte 1-3 remaining turns (bits 8-31)
    
    SPI Link
@@ -93,6 +96,9 @@ int M2=1;  // init to 1/16 steps
 int enable=1; 
 int direction=0;
 int speed = 10;
+
+pthread_mutex_t spi_lock = PTHREAD_MUTEX_INITIALIZER;  // One SPI conversation at a time
+volatile int heartbeat_running = 1;
 
 int message_send(char* msg_buf)
 {
@@ -123,8 +129,10 @@ int message_send(char* msg_buf)
 
         for (int i=0; i<MESSAGE_TRIES; i++)
         {
+                pthread_mutex_lock(&spi_lock);
                 spi_write(pi, spi_handle, full_msg, 10);
                 spi_read(pi, spi_handle, &ret_code,1);
+                pthread_mutex_unlock(&spi_lock);
                 switch (ret_code) {
                 case ACK_OK:
                         //printf("Message sent OK\n");
@@ -170,8 +178,10 @@ int read_version_message(void) {
         char checksum;
 
         msg=0x21; // Request message flag
+        pthread_mutex_lock(&spi_lock);
         spi_write(pi, spi_handle, &msg, 1); // Request
         spi_read(pi,spi_handle,r_msg,9);
+        pthread_mutex_unlock(&spi_lock);
         int counter;
 
         counter=0;
@@ -199,8 +209,10 @@ int read_motor_message(void) {
         int steps;
 
         msg=0x22; // Request message flag
+        pthread_mutex_lock(&spi_lock);
         spi_write(pi, spi_handle, &msg, 1); // Request
         spi_read(pi,spi_handle,r_msg,12);
+        pthread_mutex_unlock(&spi_lock);
 
         counter=0;
         for (int i=0; i<8; i++)
@@ -231,13 +243,31 @@ int read_null_message(void) {
         char msg;
 
         msg=0x20; // Request message flag
+        pthread_mutex_lock(&spi_lock);
         spi_write(pi, spi_handle, &msg, 1); // Request
         spi_read(pi,spi_handle,r_msg,8);
+        pthread_mutex_unlock(&spi_lock);
 
         printf("Null message %02X %02X %02X %02X %02X %02X %02X %02X\n",r_msg[7],r_msg[6],r_msg[5],r_msg[4],r_msg[3],r_msg[2],r_msg[1],r_msg[0]);
 
 }
 
+
+// Null status request every HEARTBEAT_US to keep the FPGA watchdog from stopping the motors
+void *heartbeat(void *arg) {
+        char msg;
+        char r_msg[9];
+
+        msg=0x20; // Null message request
+        while (heartbeat_running) {
+                pthread_mutex_lock(&spi_lock);
+                spi_write(pi, spi_handle, &msg, 1);
+                spi_read(pi, spi_handle, r_msg, 9);
+                pthread_mutex_unlock(&spi_lock);
+                usleep(HEARTBEAT_US);
+        }
+        return NULL;
+}
 
 int set_motor (char left_speed, char right_speed, int left_dir, int right_dir) {
         char msg[255];
@@ -292,7 +322,19 @@ int main (int argc, char **argv)
 
         char buf[255];
         char c='0';
+        pthread_t heartbeat_thread;
+
+        pi=pigpio_start(NULL,NULL);
+        if (pi<0) {
+                printf("gpio init failed\n");
+                return 1;
+        }
+        else {
+                printf("gpio init ok\n");
+
+        }
         
+        // GPIO set up needs the pigpio connection, so after pigpio_start
         gpio_write(pi,POWER_PIN,power);
         set_mode(pi,POWER_PIN,  PI_OUTPUT);
         gpio_write(pi,POWER_PIN,power);
@@ -305,19 +347,9 @@ int main (int argc, char **argv)
         gpio_write(pi,M1_PIN,M1);
         gpio_write(pi,M2_PIN,M2);
         
-
-        pi=pigpio_start(NULL,NULL);
-        if (pi<0) {
-                printf("gpio init failed\n");
-                return 1;
-        }
-        else {
-                printf("gpio init ok\n");
-
-        }
-        
         spi_handle=spi_open(pi, 0, 5e5, 0);
         read_version_message();
+        pthread_create(&heartbeat_thread, NULL, heartbeat, NULL);
 
 
         enable_motor(enable);
@@ -433,6 +465,8 @@ int main (int argc, char **argv)
         gpio_write(pi,POWER_PIN,1);  // power off
         enable_motor(1);  // diable motors
 
+        heartbeat_running=0;
+        pthread_join(heartbeat_thread, NULL);
         spi_close(pi,spi_handle);
 
 }

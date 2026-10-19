@@ -20,7 +20,8 @@ module SM_Output(
     reg     [31:0]      r_timing_counter;
     reg     [31:0]      r_max_counter;
     reg                 r_step;
-    
+    reg                 r_step_pin_prev;  // Step pin last clock, for edge detect
+
     
     
    /*ila_0  myila(.clk(i_sysclk),.probe0(r_timing_counter),.probe1(r_max_counter),.probe2(i_speed),.probe3(8'h0),
@@ -38,28 +39,17 @@ module SM_Output(
                 o_step_counter<=1'b0;
                 r_step <= 1'b0;
                 o_dir_pin <=1'b0;
+                r_step_pin_prev <= 1'b0;
             end
-            
+
         else
+        begin
             r_timing_counter <= r_timing_counter + 1;
             if (r_timing_counter > r_max_counter)
             begin
                 r_timing_counter<=0;
-                if (r_step)
-                begin
-                    r_step<=1'b0;
-                    o_step_counter<=1'b0;
-                end // if r_step
-                else
-                begin
-                    r_step<=1'b1;
-                    o_step_counter<=1'b1;
-                end // else if r_step
+                r_step<=~r_step;
             end // if (r_timing_counter > r_max_counter)
-            else //    
-            begin
-                o_step_counter<=1'b0;
-            end // else if r_timing_counter > r_max_counter)
             if(i_data_DV)
             begin
                 r_timing_counter <= 0;
@@ -67,7 +57,12 @@ module SM_Output(
                 r_max_counter <= set_max(i_speed);
                 o_dir_pin <= i_dir;
             end // if (i_data_DV)
-    end 
+            // Count rising edges of the step pin as the driver sees them, so the step
+            // started by a new command is counted and nothing is counted at speed zero
+            r_step_pin_prev <= o_step_pin;
+            o_step_counter <= o_step_pin & ~r_step_pin_prev;
+        end // else if reset
+    end
     
     assign o_step_pin = (r_max_counter==0) ? 1'b0 : r_step; // No output if speed zero
 

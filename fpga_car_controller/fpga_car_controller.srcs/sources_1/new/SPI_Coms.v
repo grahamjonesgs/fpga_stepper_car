@@ -126,7 +126,7 @@ module SPI_Coms(
                     SPI_TX_Byte<=8'h0;
                     SPI_TX_DV<=1'b1;
                     o_send_message_type=4'h0;
-                    o_send_data_request<=0'b1;
+                    o_send_data_request<=1'b0;
                     next_state<=IDLE;   // If not all message sent then go back to idle state.
                 end
                 
@@ -139,7 +139,7 @@ module SPI_Coms(
                 end
                 else
                 begin
-                    o_send_data_request<=0'b1; // Can no longer update the send message as we have sarted
+                    o_send_data_request<=1'b0; // Can no longer update the send message as we have sarted
                 end
                 if (SPI_TX_sent)  // Pulse from SPI Slave that byte was sent 
                 begin
